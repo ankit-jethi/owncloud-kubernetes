@@ -19,10 +19,13 @@
     src: kernel-module-k8s.conf
     dest: /etc/modules-load.d/
         
-- name: Copy sysctl configuration
-  ansible.builtin.copy:
-    src: 60-sysctl-k8s.conf
-    dest: /etc/sysctl.d/
-        
-- name: Letting iptables see bridged traffic - sysctl
-  ansible.builtin.command: sysctl -p /etc/sysctl.d/60-sysctl-k8s.conf
+- name: Setting sysctl config for iptables to see bridged traffic
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    sysctl_file: /etc/sysctl.d/60-sysctl-k8s.conf
+    sysctl_set: yes
+    value: '1'
+    state: present
+  loop:
+    - net.bridge.bridge-nf-call-ip6tables
+    - net.bridge.bridge-nf-call-iptables
