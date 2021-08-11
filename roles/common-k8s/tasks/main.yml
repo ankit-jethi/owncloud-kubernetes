@@ -1,9 +1,14 @@
 - name: Disable swap
   ansible.builtin.command: swapoff -a
-      
-- name: Edit /etc/fstab
-  ansible.builtin.command: sed -i.bkp '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-      
+
+- name: Remove swap entry from /etc/fstab
+  ansible.posix.mount:
+    backup: yes
+    opts: sw
+    fstype: swap
+    path: none
+    state: absent
+
 - name: Letting iptables see bridged traffic - modprobe
   ansible.builtin.command: modprobe br_netfilter    
       
