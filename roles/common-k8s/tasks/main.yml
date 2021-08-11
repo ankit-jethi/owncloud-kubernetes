@@ -8,10 +8,12 @@
     fstype: swap
     path: none
     state: absent
-
-- name: Letting iptables see bridged traffic - modprobe
-  ansible.builtin.command: modprobe br_netfilter    
       
+- name: Loading br_netfilter module for iptables to see bridged traffic
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
 - name: Copy kernel module configuration
   ansible.builtin.copy:
     src: kernel-module-k8s.conf
