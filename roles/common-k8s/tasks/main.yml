@@ -59,3 +59,17 @@
     groups: ['docker']
     name: vagrant
     state: present
+
+- name: Copy docker daemon file
+  ansible.builtin.copy:
+    src: daemon.json
+    dest: /etc/docker/
+  register: restart_docker
+
+- name: Restart docker
+  ansible.builtin.systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: docker
+    state: restarted
+  when: restart_docker is changed
