@@ -1,7 +1,8 @@
-- name: Common steps for k8s cluster
+- name: k8s master
   hosts: all
   become: yes
   vars:
     ansible_python_interpreter: /usr/bin/python3
   roles:
     - common-k8s
+    - k8s-master

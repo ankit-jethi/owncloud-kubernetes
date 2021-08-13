@@ -1,0 +1,36 @@
+- name: Create a cluster with kubeadm
+  ansible.builtin.command:
+    cmd: kubeadm init
+    creates: /etc/kubernetes/admin.conf
+  register: create_k8s_cluster
+
+# Change user - vagrant
+- name: Create .kube directory
+  ansible.builtin.file:
+    group: vagrant
+    owner: vagrant
+    path: /home/vagrant/.kube
+    recurse: yes
+    state: directory
+
+- name: Copy kubeconfig file
+  ansible.builtin.copy:
+    group: vagrant
+    owner: vagrant
+    remote_src: yes
+    src: /etc/kubernetes/admin.conf
+    dest: /home/vagrant/.kube/config
+    backup: yes
+
+- name: Deploy pod network
+  ansible.builtin.shell:
+    cmd: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+  become_user: vagrant
+  when: create_k8s_cluster is changed
+
+- name: Remove taint to schedule pods on master
+  ansible.builtin.command:
+    cmd: kubectl taint nodes --all node-role.kubernetes.io/master-
+  become_user: vagrant
+  when: create_k8s_cluster is changed
+
