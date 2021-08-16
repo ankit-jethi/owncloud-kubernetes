@@ -1,6 +1,6 @@
 - name: Create a cluster with kubeadm
   ansible.builtin.command:
-    cmd: kubeadm init
+    cmd: kubeadm init --apiserver-advertise-address=192.168.2.50
     creates: /etc/kubernetes/admin.conf
   register: create_k8s_cluster
 
@@ -34,3 +34,15 @@
   become_user: vagrant
   when: create_k8s_cluster is changed
 
+- name: Get the join command
+  ansible.builtin.command:
+    cmd: kubeadm token create --print-join-command
+  register: k8s_join_command
+  when: create_k8s_cluster is changed
+
+- name: Store the join command locally
+  ansible.builtin.copy:
+    content: "{{k8s_join_command.stdout}}"
+    dest: ./k8s_join_script.sh
+  delegate_to: 127.0.0.1
+  when: create_k8s_cluster is changed
