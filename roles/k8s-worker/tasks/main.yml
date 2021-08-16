@@ -1,0 +1,5 @@
+- name: Join the k8s cluster
+  ansible.builtin.script:
+    cmd: ./k8s_join_script.sh
+    executable: /bin/bash
+    creates: /etc/kubernetes/pki/ca.crt
