@@ -1,0 +1,44 @@
+- name: Install Docker dependencies
+  ansible.builtin.apt:
+    update_cache: yes
+    name: ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg', 'lsb-release']
+    state: present
+
+- name: Add Docker's GPG key
+  ansible.builtin.shell:
+    cmd:  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    creates: /usr/share/keyrings/docker-archive-keyring.gpg
+
+- name: Setup Docker's repository
+  ansible.builtin.apt_repository:
+    filename: docker
+    repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu bionic stable
+    state: present
+
+- name: Install Docker
+  ansible.builtin.apt:
+    name: ['docker-ce=5:20.10.6~3-0~ubuntu-bionic', 'docker-ce-cli=5:20.10.6~3-0~ubuntu-bionic', 'containerd.io']
+    state: present
+
+# Change user - vagrant
+- name: Add user to docker group
+  ansible.builtin.user:
+    append: yes
+    groups: ['docker']
+    name: vagrant
+    state: present
+
+- name: Copy docker daemon file
+  ansible.builtin.copy:
+    src: daemon.json
+    dest: /etc/docker/
+  register: copy_docker_daemon
+
+- name: Restart docker
+  ansible.builtin.systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: docker
+    state: restarted
+  when: copy_docker_daemon is changed
+

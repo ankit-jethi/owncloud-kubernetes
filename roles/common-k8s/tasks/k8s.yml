@@ -1,0 +1,22 @@
+- name: Add Kubernetes's GPG key
+  ansible.builtin.command:
+    cmd: curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    creates: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+
+- name: Setup Kubernetes's repository
+  ansible.builtin.apt_repository:
+    filename: kubernetes
+    repo: deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+
+- name: Install Kubernetes
+  ansible.builtin.apt:
+    name: ['kubelet=1.21.3-00', 'kubeadm=1.21.3-00', 'kubectl=1.21.3-00']
+    state: present
+
+- name: Prevent automatic upgrade of Kubernetes
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: ['kubelet', 'kubeadm', 'kubectl']
+
