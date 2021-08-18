@@ -17,15 +17,14 @@
 
 - name: Install Docker
   ansible.builtin.apt:
-    name: ['docker-ce=5:20.10.6~3-0~ubuntu-bionic', 'docker-ce-cli=5:20.10.6~3-0~ubuntu-bionic', 'containerd.io']
+    name: "{{ docker_packages }}"
     state: present
 
-# Change user - vagrant
 - name: Add user to docker group
   ansible.builtin.user:
     append: yes
     groups: ['docker']
-    name: vagrant
+    name: "{{ admin_user }}"
     state: present
 
 - name: Copy docker daemon file

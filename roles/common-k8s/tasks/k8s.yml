@@ -11,12 +11,12 @@
 
 - name: Install Kubernetes
   ansible.builtin.apt:
-    name: ['kubelet=1.21.3-00', 'kubeadm=1.21.3-00', 'kubectl=1.21.3-00']
+    name: "{{ k8s_packages }}"
     state: present
 
 - name: Prevent automatic upgrade of Kubernetes
   ansible.builtin.dpkg_selections:
     name: "{{ item }}"
-    selection: hold
+    selection: "{{ k8s_dpkg_selections }}"
   loop: ['kubelet', 'kubeadm', 'kubectl']
 

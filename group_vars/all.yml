@@ -1,0 +1,14 @@
+# Ansible
+
+ansible_python_interpreter: /usr/bin/python3
+
+# k8s cluster - master and worker nodes
+
+admin_user: vagrant
+docker_packages: ['docker-ce=5:20.10.6~3-0~ubuntu-bionic', 'docker-ce-cli=5:20.10.6~3-0~ubuntu-bionic', 'containerd.io']
+k8s_packages: ['kubelet=1.21.3-00', 'kubeadm=1.21.3-00', 'kubectl=1.21.3-00']
+k8s_dpkg_selections: hold
+
+# k8s master
+
+apiserver_advertise_address: 192.168.2.50
