@@ -20,6 +20,21 @@ variable "vpc_enable_dns_hostnames" {
 }
 
 variable "vpc_tags" {
-  description = "Tags for your VPC."
+  description = "Tags for the VPC."
   type = map(string)
+}
+
+variable "subnet_cidr_blocks" {
+  description = "The CIDR blocks for the subnets."
+  type = map(string)
+}
+
+variable "subnet_availability_zones" {
+  description = "The AZs for the subnets."
+  type = map(string)
+}
+
+variable "subnet_tags" {
+  description = "Tags for the subnets."
+  type = map(map(string))
 }
