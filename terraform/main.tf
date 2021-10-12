@@ -70,13 +70,12 @@ resource "aws_internet_gateway" "oc" {
 resource "aws_route_table" "oc_public" {
   vpc_id = aws_vpc.oc.id
   
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.oc.id
+  }
+  
   tags = var.public_route_table_tags
-}
-
-resource "aws_route" "oc_public" {
-  route_table_id = aws_route_table.oc_public.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id = aws_internet_gateway.oc.id
 }
 
 resource "aws_route_table_association" "oc_public" {
@@ -112,9 +111,9 @@ resource "aws_default_route_table" "oc_private" {
   default_route_table_id = aws_vpc.oc.default_route_table_id
   
   route {
-      cidr_block = "0.0.0.0/0"
-      nat_gateway_id = aws_nat_gateway.oc.id
-    }
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.oc.id
+  }
   
   tags = var.private_route_table_tags
 }
