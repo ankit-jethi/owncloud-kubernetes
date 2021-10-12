@@ -49,7 +49,7 @@ variable "public_route_table_tags" {
   type = map(string)
 }
 
-variable "eip_ngw_tags" {
+variable "elastic_ip_ngw_tags" {
   description = "Tags for the Elastic IP address to be associated with the NAT Gateway."
   type = map(string)
 }
@@ -61,6 +61,56 @@ variable "nat_gateway_tags" {
 
 variable "private_route_table_tags" {
   description = "Tags for the private route table."
+  type = map(string)
+}
+
+variable "lb_security_group_name" {
+  description = "Name for the Load Balancer Security Group."
+  type = string
+}
+
+variable "lb_security_group_description" {
+  description = "Description for the Load Balancer Security Group."
+  type = string
+}
+
+variable "lb_security_group_tags" {
+  description = "Tags for the Load Balancer Security Group."
+  type = map(string)
+}
+
+variable "bastion_security_group_name" {
+  description = "Name for the Bastion Security Group."
+  type = string
+}
+
+variable "bastion_security_group_description" {
+  description = "Description for the Bastion Security Group."
+  type = string
+}
+
+variable "bastion_security_group_tags" {
+  description = "Tags for the Bastion Security Group."
+  type = map(string)
+}
+
+variable "cidr_blocks_ssh_bastion" {
+  description = "A list of CIDR blocks to be allowed SSH access to the Bastion."
+  type = list(string)
+}
+
+variable "app_security_group_name" {
+  description = "Name for the Application Security Group."
+  type = string
+}
+
+variable "app_security_group_description" {
+  description = "Description for the Application Security Group."
+  type = string
+}
+
+variable "app_security_group_tags" {
+  description = "Tags for the Application Security Group."
   type = map(string)
 }
 

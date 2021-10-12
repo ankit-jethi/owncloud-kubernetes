@@ -92,7 +92,7 @@ resource "aws_eip" "oc_ngw" {
   public_ipv4_pool = "amazon"
   vpc = true
   
-  tags = var.eip_ngw_tags
+  tags = var.elastic_ip_ngw_tags
   
   depends_on = [aws_internet_gateway.oc]
 }
@@ -116,4 +116,72 @@ resource "aws_default_route_table" "oc_private" {
   }
   
   tags = var.private_route_table_tags
+}
+
+locals {
+  lb_security_group_ingress = [
+    { description = "HTTP access from the world.", port = 80 },
+    { description = "HTTPS access from the world.", port = 443 }
+  ]
+  
+  app_security_group_ingress = [
+    { description = "HTTP access from the Load Balancer", port = 80, security_groups = [aws_security_group.oc_lb.id] },
+    { description = "SSH access from the Bastion.", port = 22, security_groups = [aws_security_group.oc_bastion.id] }
+  ]
+}
+
+resource "aws_security_group" "oc_lb" {
+  name = var.lb_security_group_name
+  description = var.lb_security_group_description
+  vpc_id = aws_vpc.oc.id
+  
+  dynamic "ingress" {
+    for_each = local.lb_security_group_ingress
+    
+    content {
+      description = ingress.value.description
+      from_port = ingress.value.port
+      to_port = ingress.value.port
+      protocol = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]      
+    }
+  }
+  
+  tags = var.lb_security_group_tags
+}
+
+resource "aws_security_group" "oc_bastion" {
+  name = var.bastion_security_group_name
+  description = var.bastion_security_group_description
+  vpc_id = aws_vpc.oc.id
+  
+  ingress {
+      description = "SSH access from your IP address(es)."
+      from_port = 22
+      to_port = 22
+      protocol = "tcp"
+      cidr_blocks = var.cidr_blocks_ssh_bastion
+  }
+    
+  tags = var.bastion_security_group_tags    
+}
+
+resource "aws_security_group" "oc_app" {
+  name = var.app_security_group_name
+  description = var.app_security_group_description
+  vpc_id = aws_vpc.oc.id
+  
+  dynamic "ingress" {
+    for_each = local.app_security_group_ingress
+    
+    content {
+      description = ingress.value.description
+      from_port = ingress.value.port
+      to_port = ingress.value.port
+      protocol = "tcp"
+      security_groups = ingress.value.security_groups    
+    }
+  }
+  
+  tags = var.app_security_group_tags
 }
