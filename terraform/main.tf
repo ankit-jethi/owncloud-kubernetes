@@ -35,3 +35,27 @@ resource "aws_subnet" "oc_public_2" {
   
   tags = var.subnet_tags["oc_public_2"]
 }
+
+resource "aws_subnet" "oc_private_1" {
+  vpc_id = aws_vpc.oc.id
+  cidr_block = var.subnet_cidr_blocks["oc_private_1"]
+  availability_zone = var.subnet_availability_zones["oc_private_1"]
+  
+  tags = var.subnet_tags["oc_private_1"]
+}
+
+resource "aws_subnet" "oc_private_2" {
+  vpc_id = aws_vpc.oc.id
+  cidr_block = var.subnet_cidr_blocks["oc_private_2"]
+  availability_zone = var.subnet_availability_zones["oc_private_2"]
+  
+  tags = var.subnet_tags["oc_private_2"]
+}
+
+resource "aws_subnet" "oc_private_3" {
+  vpc_id = aws_vpc.oc.id
+  cidr_block = var.subnet_cidr_blocks["oc_private_3"]
+  availability_zone = var.subnet_availability_zones["oc_private_3"]
+  
+  tags = var.subnet_tags["oc_private_3"]
+}
