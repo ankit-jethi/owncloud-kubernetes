@@ -59,3 +59,43 @@ resource "aws_subnet" "oc_private_3" {
   
   tags = var.subnet_tags["oc_private_3"]
 }
+
+resource "aws_internet_gateway" "oc" {
+  vpc_id = aws_vpc.oc.id
+  
+  tags = var.internet_gateway_tags
+}
+
+
+resource "aws_route_table" "oc_public" {
+  vpc_id = aws_vpc.oc.id
+  
+  /*
+  route = [
+    {
+      cidr_block = "0.0.0.0/0"
+      gateway_id = aws_internet_gateway.oc.id
+    }
+  ]
+  */
+  
+  tags = var.public_route_table_tags
+  
+  #depends_on = [aws_internet_gateway.oc]
+}
+
+resource "aws_route" "oc_public" {
+  route_table_id = aws_route_table.oc_public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id = aws_internet_gateway.oc.id
+}
+
+resource "aws_route_table_association" "oc_public" {
+  for_each = {
+    oc_public_1 = aws_subnet.oc_public_1.id
+    oc_public_2 = aws_subnet.oc_public_2.id
+  }
+
+  subnet_id = each.value
+  route_table_id = aws_route_table.oc_public.id
+}

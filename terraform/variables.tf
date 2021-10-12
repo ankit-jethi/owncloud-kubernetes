@@ -38,3 +38,14 @@ variable "subnet_tags" {
   description = "Tags for the subnets."
   type = map(map(string))
 }
+
+variable "internet_gateway_tags" {
+  description = "Tags for the internet gateway."
+  type = map(string)
+}
+
+variable "public_route_table_tags" {
+  description = "Tags for the public route table."
+  type = map(string)
+}
+
