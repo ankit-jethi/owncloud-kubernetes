@@ -40,12 +40,27 @@ variable "subnet_tags" {
 }
 
 variable "internet_gateway_tags" {
-  description = "Tags for the internet gateway."
+  description = "Tags for the Internet Gateway."
   type = map(string)
 }
 
 variable "public_route_table_tags" {
   description = "Tags for the public route table."
+  type = map(string)
+}
+
+variable "eip_ngw_tags" {
+  description = "Tags for the Elastic IP address to be associated with the NAT Gateway."
+  type = map(string)
+}
+
+variable "nat_gateway_tags" {
+  description = "Tags for the NAT Gateway."
+  type = map(string)
+}
+
+variable "private_route_table_tags" {
+  description = "Tags for the private route table."
   type = map(string)
 }
 
