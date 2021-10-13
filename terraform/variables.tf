@@ -114,3 +114,57 @@ variable "app_security_group_tags" {
   type = map(string)
 }
 
+variable "database_security_group_name" {
+  description = "Name for the Database Security Group."
+  type = string
+}
+
+variable "database_security_group_description" {
+  description = "Description for the Database Security Group."
+  type = string
+}
+
+variable "database_security_group_tags" {
+  description = "Tags for the Database Security Group."
+  type = map(string)
+}
+
+variable "db_subnet_group_name" {
+  description = "Name for the Database Subnet group."
+  type = string
+}
+
+variable "db_subnet_group_description" {
+  description = "Description for the Database Subnet group."
+  type = string
+}
+
+variable "db_subnet_group_tags" {
+  description = "Tags for the Database Subnet group."
+  type = map(string)
+}
+
+variable "db_parameter_group_name" {
+  description = "Name for the Database Parameter group."
+  type = string
+}
+
+variable "db_parameter_group_description" {
+  description = "Description for the Database Parameter group."
+  type = string
+}
+
+variable "db_parameter_group_family" {
+  description = "The family of the Database Parameter group."
+  type = string
+}
+
+variable "db_parameter_group_parameters" {
+  description = "Parameters for the Database Parameter group."
+  type = list(map(string))
+}
+
+variable "db_parameter_group_tags" {
+  description = "Tags for the Database Parameter group."
+  type = map(string)
+}

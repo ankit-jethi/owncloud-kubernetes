@@ -60,6 +60,22 @@ resource "aws_subnet" "oc_private_3" {
   tags = var.subnet_tags["oc_private_3"]
 }
 
+resource "aws_subnet" "oc_database_1" {
+  vpc_id = aws_vpc.oc.id
+  cidr_block = var.subnet_cidr_blocks["oc_database_1"]
+  availability_zone = var.subnet_availability_zones["oc_database_1"]
+  
+  tags = var.subnet_tags["oc_database_1"]
+}
+
+resource "aws_subnet" "oc_database_2" {
+  vpc_id = aws_vpc.oc.id
+  cidr_block = var.subnet_cidr_blocks["oc_database_2"]
+  availability_zone = var.subnet_availability_zones["oc_database_2"]
+  
+  tags = var.subnet_tags["oc_database_2"]
+}
+
 resource "aws_internet_gateway" "oc" {
   vpc_id = aws_vpc.oc.id
   
@@ -184,4 +200,46 @@ resource "aws_security_group" "oc_app" {
   }
   
   tags = var.app_security_group_tags
+}
+
+resource "aws_security_group" "oc_database" {
+  name = var.database_security_group_name
+  description = var.database_security_group_description
+  vpc_id = aws_vpc.oc.id
+  
+  ingress {
+      description = "Database access from the app and bastion servers."
+      from_port = 3306
+      to_port = 3306
+      protocol = "tcp"
+      security_groups = [aws_security_group.oc_app.id, aws_security_group.oc_bastion.id]
+  }
+    
+  tags = var.database_security_group_tags    
+}
+
+resource "aws_db_subnet_group" "oc" {
+  name = var.db_subnet_group_name
+  description = var.db_subnet_group_description
+  subnet_ids = [aws_subnet.oc_database_1.id, aws_subnet.oc_database_2.id]
+  
+  tags = var.db_subnet_group_tags
+}
+
+resource "aws_db_parameter_group" "oc" {
+  name = var.db_parameter_group_name
+  description = var.db_parameter_group_description
+  family = var.db_parameter_group_family
+  
+  dynamic "parameter" {
+    for_each = var.db_parameter_group_parameters
+    
+    content {
+      name = parameter.value.name
+      value = parameter.value.value
+      apply_method = parameter.value.apply_method
+    }
+  }
+  
+  tags = var.db_parameter_group_tags
 }
