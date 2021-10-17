@@ -163,6 +163,14 @@ resource "aws_security_group" "oc_lb" {
     }
   }
   
+  egress {
+      description = "Allow all outbound traffic."  
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }  
+  
   tags = var.lb_security_group_tags
 }
 
@@ -178,6 +186,14 @@ resource "aws_security_group" "oc_bastion" {
       protocol = "tcp"
       cidr_blocks = var.cidr_blocks_ssh_bastion
   }
+  
+  egress {
+      description = "Allow all outbound traffic."  
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
     
   tags = var.bastion_security_group_tags    
 }
@@ -198,6 +214,14 @@ resource "aws_security_group" "oc_app" {
       security_groups = ingress.value.security_groups    
     }
   }
+  
+  egress {
+      description = "Allow all outbound traffic."  
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }  
   
   tags = var.app_security_group_tags
 }
@@ -282,4 +306,49 @@ resource "aws_key_pair" "oc" {
   public_key = file(var.path_to_public_key)
   
   tags = var.key_pair_tags
+}
+
+resource "aws_launch_template" "oc_bastion" {
+  name = var.bastion_launch_template["name"]
+  description = var.bastion_launch_template["description"]
+  image_id = var.bastion_launch_template["image_id"]
+  instance_type = var.bastion_launch_template["instance_type"]
+  key_name = aws_key_pair.oc.id
+  vpc_security_group_ids = [aws_security_group.oc_bastion.id]
+  
+  block_device_mappings {
+    device_name = "/dev/sda1"
+    ebs {
+      encrypted = var.bastion_launch_template["encrypted"]
+      volume_size = var.bastion_launch_template["volume_size"]
+      volume_type = var.bastion_launch_template["volume_type"]
+      delete_on_termination = var.bastion_launch_template["delete_on_termination"]
+    }
+  }
+  
+  tag_specifications {
+    resource_type = "instance"
+    
+    tags = var.bastion_instance_tags
+  }
+  
+  tag_specifications {
+    resource_type = "volume"
+    
+    tags = var.bastion_instance_tags
+  }  
+}
+
+resource "aws_autoscaling_group" "oc_bastion" {
+  name = var.bastion_autoscaling_group["name"]
+  desired_capacity = var.bastion_autoscaling_group["desired_capacity"]
+  min_size = var.bastion_autoscaling_group["min_size"]
+  max_size = var.bastion_autoscaling_group["max_size"]
+  health_check_type = "EC2"
+  vpc_zone_identifier = [aws_subnet.oc_public_1.id, aws_subnet.oc_public_2.id]
+  
+  launch_template {
+    id = aws_launch_template.oc_bastion.id
+    version = aws_launch_template.oc_bastion.latest_version
+  }
 }

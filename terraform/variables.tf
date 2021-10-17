@@ -193,3 +193,18 @@ variable "key_pair_tags" {
   description = "Tags for the key pair."
   type = map(string)
 }
+
+variable "bastion_launch_template" {
+  description = "A map of all the data required to setup the Bastion launch template."
+  type = map(string)
+}
+
+variable "bastion_instance_tags" {
+  description = "Tags for the Bastion instance."
+  type = map(string)
+}
+
+variable "bastion_autoscaling_group" {
+  description = "A map of all the data required to setup the Bastion Auto Scaling Group."
+  type = map(string)
+}
