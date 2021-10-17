@@ -178,3 +178,18 @@ variable "db_instance_tags" {
   description = "Tags for the Database instance."
   type = map(string)
 }
+
+variable "key_name" {
+  description = "The key name to associate with your instances."
+  type = string
+}
+
+variable "path_to_public_key" {
+  description = "The path to the public key to associate with your instances."
+  type = string  
+}
+
+variable "key_pair_tags" {
+  description = "Tags for the key pair."
+  type = map(string)
+}

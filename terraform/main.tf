@@ -276,3 +276,10 @@ resource "aws_db_instance" "oc" {
   
   tags = var.db_instance_tags
 }
+
+resource "aws_key_pair" "oc" {
+  key_name = var.key_name
+  public_key = file(var.path_to_public_key)
+  
+  tags = var.key_pair_tags
+}
