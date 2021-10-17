@@ -168,3 +168,13 @@ variable "db_parameter_group_tags" {
   description = "Tags for the Database Parameter group."
   type = map(string)
 }
+
+variable "db_instance" {
+  description = "A map of all the data required to setup the Database instance."
+  type = map(string)
+}
+
+variable "db_instance_tags" {
+  description = "Tags for the Database instance."
+  type = map(string)
+}

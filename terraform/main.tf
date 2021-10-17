@@ -243,3 +243,36 @@ resource "aws_db_parameter_group" "oc" {
   
   tags = var.db_parameter_group_tags
 }
+
+resource "aws_db_instance" "oc" {
+  allocated_storage = var.db_instance["allocated_storage"]
+  max_allocated_storage = var.db_instance["max_allocated_storage"]
+  storage_type = var.db_instance["storage_type"]
+  storage_encrypted = var.db_instance["storage_encrypted"]
+   
+  instance_class = var.db_instance["instance_class"]
+  engine = var.db_instance["engine"]
+  engine_version = var.db_instance["engine_version"]
+  identifier = var.db_instance["identifier"]
+  name = var.db_instance["db_name"]
+  username = var.db_instance["username"]
+  password = var.db_instance["password"]
+
+  db_subnet_group_name = aws_db_subnet_group.oc.id
+  multi_az = var.db_instance["multi_az"]
+  vpc_security_group_ids = [aws_security_group.oc_database.id]
+  parameter_group_name = aws_db_parameter_group.oc.id
+  
+  backup_retention_period = var.db_instance["backup_retention_period"]
+  backup_window = var.db_instance["backup_window"]
+  copy_tags_to_snapshot = var.db_instance["copy_tags_to_snapshot"]  
+  maintenance_window = var.db_instance["maintenance_window"]
+  auto_minor_version_upgrade = var.db_instance["auto_minor_version_upgrade"]
+  
+  delete_automated_backups = var.db_instance["delete_automated_backups"]
+  skip_final_snapshot = var.db_instance["skip_final_snapshot"]
+  final_snapshot_identifier = var.db_instance["final_snapshot_identifier"]  
+  deletion_protection = var.db_instance["deletion_protection"]
+  
+  tags = var.db_instance_tags
+}
