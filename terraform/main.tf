@@ -352,3 +352,27 @@ resource "aws_autoscaling_group" "oc_bastion" {
     version = aws_launch_template.oc_bastion.latest_version
   }
 }
+
+data "aws_instance" "oc_bastion" {
+
+  instance_tags = {
+    "aws:autoscaling:groupName" = aws_autoscaling_group.oc_bastion.name
+    "aws:ec2launchtemplate:version" = aws_launch_template.oc_bastion.latest_version
+  }
+}
+
+resource "null_resource" "oc_bastion" {
+
+  provisioner "local-exec" {
+    working_dir = "../group_vars"
+    command = <<-EOT
+    cat > k8s.yml <<EOF
+    ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ${var.bastion_login_user}@${data.aws_instance.oc_bastion.public_ip}"'
+    EOF
+    EOT
+  }
+
+  triggers = {
+    bastion_instance_id = data.aws_instance.oc_bastion.id
+  }
+}

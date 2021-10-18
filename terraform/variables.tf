@@ -208,3 +208,8 @@ variable "bastion_autoscaling_group" {
   description = "A map of all the data required to setup the Bastion Auto Scaling Group."
   type = map(string)
 }
+
+variable "bastion_login_user" {
+  description = "Name of the login user of the Bastion instance."
+  type = string
+}
