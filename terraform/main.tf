@@ -141,8 +141,14 @@ locals {
   ]
   
   app_security_group_ingress = [
-    { description = "HTTP access from the Load Balancer", port = 80, security_groups = [aws_security_group.oc_lb.id] },
-    { description = "SSH access from the Bastion.", port = 22, security_groups = [aws_security_group.oc_bastion.id] }
+    { description = "HTTP access from the Load Balancer", port = 80, security_groups = [aws_security_group.oc_lb.id], self = false },
+    { description = "SSH access from the Bastion.", port = 22, security_groups = [aws_security_group.oc_bastion.id], self = false },
+    { description = "Kubernetes API server", port = 6443, security_groups = [], self = true },
+    { description = "etcd server client API", port = 2379, security_groups = [], self = true },
+    { description = "etcd server client API", port = 2380, security_groups = [], self = true },
+    { description = "Kubelet API", port = 10250, security_groups = [], self = true },
+    { description = "kube-scheduler", port = 10259, security_groups = [], self = true },
+    { description = "kube-controller-manager", port = 10257, security_groups = [], self = true }
   ]
 }
 
@@ -211,7 +217,8 @@ resource "aws_security_group" "oc_app" {
       from_port = ingress.value.port
       to_port = ingress.value.port
       protocol = "tcp"
-      security_groups = ingress.value.security_groups    
+      security_groups = ingress.value.security_groups
+      self = ingress.value.self
     }
   }
   
@@ -267,7 +274,7 @@ resource "aws_db_parameter_group" "oc" {
   
   tags = var.db_parameter_group_tags
 }
-
+/*
 resource "aws_db_instance" "oc" {
   allocated_storage = var.db_instance["allocated_storage"]
   max_allocated_storage = var.db_instance["max_allocated_storage"]
@@ -300,7 +307,7 @@ resource "aws_db_instance" "oc" {
   
   tags = var.db_instance_tags
 }
-
+*/
 resource "aws_key_pair" "oc" {
   key_name = var.key_name
   public_key = file(var.path_to_public_key)
@@ -358,6 +365,7 @@ data "aws_instance" "oc_bastion" {
   instance_tags = {
     "aws:autoscaling:groupName" = aws_autoscaling_group.oc_bastion.name
     "aws:ec2launchtemplate:version" = aws_launch_template.oc_bastion.latest_version
+    Name = "oc_bastion"
   }
 }
 
@@ -374,5 +382,100 @@ resource "null_resource" "oc_bastion" {
 
   triggers = {
     bastion_instance_id = data.aws_instance.oc_bastion.id
+  }
+}
+
+resource "aws_instance" "oc_k8s_master" {
+  ami = var.k8s_master["ami"]
+  instance_type = var.k8s_master["instance_type"]
+  key_name = aws_key_pair.oc.id
+  private_ip = var.k8s_master["private_ip"]
+  subnet_id = aws_subnet.oc_private_1.id
+  vpc_security_group_ids = [aws_security_group.oc_app.id]
+  
+  root_block_device {
+    volume_size = var.k8s_master["volume_size"]
+    volume_type = var.k8s_master["volume_type"]
+    encrypted = var.k8s_master["encrypted"]
+    delete_on_termination = var.k8s_master["delete_on_termination"]
+  }
+  
+  credit_specification {
+    cpu_credits = var.k8s_master["cpu_credits"]
+  }
+  
+  tags = var.k8s_master_tags
+  volume_tags = var.k8s_master_tags
+}
+
+resource "aws_instance" "oc_k8s_worker" {
+  ami = var.k8s_worker["ami"]
+  instance_type = var.k8s_worker["instance_type"]
+  key_name = aws_key_pair.oc.id
+  private_ip = var.k8s_worker["private_ip"]
+  subnet_id = aws_subnet.oc_private_2.id
+  vpc_security_group_ids = [aws_security_group.oc_app.id]
+  
+  root_block_device {
+    volume_size = var.k8s_worker["volume_size"]
+    volume_type = var.k8s_worker["volume_type"]
+    encrypted = var.k8s_worker["encrypted"]
+    delete_on_termination = var.k8s_worker["delete_on_termination"]
+  }
+  
+  credit_specification {
+    cpu_credits = var.k8s_worker["cpu_credits"]
+  }
+  
+  tags = var.k8s_worker_tags
+  volume_tags = var.k8s_worker_tags
+}
+
+resource "null_resource" "oc_k8s_cluster" {
+
+  provisioner "local-exec" {
+    working_dir = "../"
+    command = <<-EOT
+    cat > aws_inventory <<EOF
+    [master]
+    ${aws_instance.oc_k8s_master.private_ip} ansible_user=ubuntu
+    
+    [worker]
+    ${aws_instance.oc_k8s_worker.private_ip} ansible_user=ubuntu
+    
+    [k8s:children]
+    master
+    worker
+    
+    EOF
+    EOT
+  }
+
+  triggers = {
+    k8s_master_id = aws_instance.oc_k8s_master.id
+  }
+}
+
+resource "null_resource" "oc_k8s_master" {
+
+  provisioner "local-exec" {
+    working_dir = "../"
+    command = "aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_k8s_master.id} && ansible-playbook -i aws_inventory master.yml"
+  }
+
+  triggers = {
+    k8s_master_id = aws_instance.oc_k8s_master.id
+  }
+}
+
+resource "null_resource" "oc_k8s_worker" {
+
+  provisioner "local-exec" {
+    working_dir = "../"
+    command = "aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_k8s_worker.id} && ansible-playbook -i aws_inventory worker.yml"
+  }
+
+  triggers = {
+    k8s_worker_id = aws_instance.oc_k8s_worker.id
   }
 }
