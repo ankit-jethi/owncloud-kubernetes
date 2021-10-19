@@ -447,36 +447,27 @@ resource "null_resource" "oc_k8s_cluster" {
     EOF
     EOT
   }
-
-  triggers = {
-    k8s_master_id = aws_instance.oc_k8s_master.id
-  }
-}
-
-resource "null_resource" "oc_k8s_master" {
-
-  provisioner "local-exec" {
-    working_dir = "../"
-    command = "aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_k8s_master.id} && ansible-playbook -i aws_inventory master.yml"
-  }
-
-  triggers = {
-    k8s_master_id = aws_instance.oc_k8s_master.id
-  }
   
-  depends_on = [null_resource.oc_k8s_cluster, null_resource.oc_bastion]  
-}
-
-resource "null_resource" "oc_k8s_worker" {
-
+  provisioner "local-exec" {
+    working_dir = "../group_vars"
+    command = <<-EOT
+    sed -i 's/^admin_user.*/admin_user: ${var.k8s_instance_login_user}/' all.yml && \
+    sed -i 's/^apiserver_advertise_address.*/apiserver_advertise_address: ${aws_instance.oc_k8s_master.private_ip}/' all.yml
+    EOT
+  }   
+  
   provisioner "local-exec" {
     working_dir = "../"
-    command = "aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_k8s_worker.id} && ansible-playbook -i aws_inventory worker.yml"
-  }
+    command = <<-EOT
+    aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_k8s_master.id} ${aws_instance.oc_k8s_worker.id} && \
+    ansible-playbook -i aws_inventory site.yml
+    EOT
+  }  
 
   triggers = {
+    k8s_master_id = aws_instance.oc_k8s_master.id
     k8s_worker_id = aws_instance.oc_k8s_worker.id
   }
   
-  depends_on = [null_resource.oc_k8s_master]
+  depends_on = [null_resource.oc_bastion] 
 }
