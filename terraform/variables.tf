@@ -218,15 +218,23 @@ variable "k8s_master" {
   description = "A map of all the data required to setup the K8s master instance."
   type = map(string)
 }
+
 variable "k8s_master_tags" {
   description = "Tags for the K8s master instance."
   type = map(string)
 }
+
 variable "k8s_worker" {
   description = "A map of all the data required to setup the K8s worker instance."
   type = map(string)
 }
+
 variable "k8s_worker_tags" {
   description = "Tags for the K8s worker instance."
   type = map(string)
+}
+
+variable "k8s_instance_login_user" {
+  description = "Name of the login user of the K8s instances."
+  type = string
 }

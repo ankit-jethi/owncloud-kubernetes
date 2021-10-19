@@ -361,12 +361,9 @@ resource "aws_autoscaling_group" "oc_bastion" {
 }
 
 data "aws_instance" "oc_bastion" {
-
-  instance_tags = {
-    "aws:autoscaling:groupName" = aws_autoscaling_group.oc_bastion.name
-    "aws:ec2launchtemplate:version" = aws_launch_template.oc_bastion.latest_version
-    Name = "oc_bastion"
-  }
+  instance_tags = var.bastion_instance_tags
+  
+  depends_on = [aws_autoscaling_group.oc_bastion]  
 }
 
 resource "null_resource" "oc_bastion" {
@@ -438,10 +435,10 @@ resource "null_resource" "oc_k8s_cluster" {
     command = <<-EOT
     cat > aws_inventory <<EOF
     [master]
-    ${aws_instance.oc_k8s_master.private_ip} ansible_user=ubuntu
+    ${aws_instance.oc_k8s_master.private_ip} ansible_user=${var.k8s_instance_login_user}
     
     [worker]
-    ${aws_instance.oc_k8s_worker.private_ip} ansible_user=ubuntu
+    ${aws_instance.oc_k8s_worker.private_ip} ansible_user=${var.k8s_instance_login_user}
     
     [k8s:children]
     master
@@ -466,6 +463,8 @@ resource "null_resource" "oc_k8s_master" {
   triggers = {
     k8s_master_id = aws_instance.oc_k8s_master.id
   }
+  
+  depends_on = [null_resource.oc_k8s_cluster, null_resource.oc_bastion]  
 }
 
 resource "null_resource" "oc_k8s_worker" {
@@ -478,4 +477,6 @@ resource "null_resource" "oc_k8s_worker" {
   triggers = {
     k8s_worker_id = aws_instance.oc_k8s_worker.id
   }
+  
+  depends_on = [null_resource.oc_k8s_master]
 }
