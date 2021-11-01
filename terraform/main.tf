@@ -372,7 +372,7 @@ resource "null_resource" "oc_bastion" {
     working_dir = "../group_vars"
     command = <<-EOT
     cat > k8s.yml <<EOF
-    ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ${var.bastion_login_user}@${data.aws_instance.oc_bastion.public_ip}"'
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyCommand="ssh -o StrictHostKeyChecking=no -W %h:%p -q ${var.bastion_login_user}@${data.aws_instance.oc_bastion.public_ip}"'
     EOF
     EOT
   }
