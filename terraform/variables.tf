@@ -64,21 +64,6 @@ variable "private_route_table_tags" {
   type = map(string)
 }
 
-variable "lb_security_group_name" {
-  description = "Name for the Load Balancer Security Group."
-  type = string
-}
-
-variable "lb_security_group_description" {
-  description = "Description for the Load Balancer Security Group."
-  type = string
-}
-
-variable "lb_security_group_tags" {
-  description = "Tags for the Load Balancer Security Group."
-  type = map(string)
-}
-
 variable "bastion_security_group_name" {
   description = "Name for the Bastion Security Group."
   type = string
