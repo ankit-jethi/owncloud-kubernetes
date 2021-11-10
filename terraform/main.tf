@@ -141,14 +141,15 @@ locals {
   ]
   
   app_security_group_ingress = [
-    { description = "HTTP access from the Load Balancer", port = 80, security_groups = [aws_security_group.oc_lb.id], self = false },
-    { description = "SSH access from the Bastion.", port = 22, security_groups = [aws_security_group.oc_bastion.id], self = false },
-    { description = "Kubernetes API server", port = 6443, security_groups = [], self = true },
-    { description = "etcd server client API", port = 2379, security_groups = [], self = true },
-    { description = "etcd server client API", port = 2380, security_groups = [], self = true },
-    { description = "Kubelet API", port = 10250, security_groups = [], self = true },
-    { description = "kube-scheduler", port = 10259, security_groups = [], self = true },
-    { description = "kube-controller-manager", port = 10257, security_groups = [], self = true }
+    { description = "App access from the the internet.", protocol = "tcp", port = 30000, security_groups = [], cidr_blocks = ["0.0.0.0/0"], self = false },
+    { description = "SSH access from the Bastion.", protocol = "tcp", port = 22, security_groups = [aws_security_group.oc_bastion.id], cidr_blocks = [], self = false },
+    { description = "Kubernetes API server", protocol = "tcp", port = 6443, security_groups = [], cidr_blocks = [], self = true },
+    { description = "etcd server client API", protocol = "tcp", port = 2379, security_groups = [], cidr_blocks = [], self = true },
+    { description = "etcd server client API", protocol = "tcp", port = 2380, security_groups = [], cidr_blocks = [], self = true },
+    { description = "Kubelet API", protocol = "tcp", port = 10250, security_groups = [], cidr_blocks = [], self = true },
+    { description = "kube-scheduler", protocol = "tcp", port = 10259, security_groups = [], cidr_blocks = [], self = true },
+    { description = "kube-controller-manager", protocol = "tcp", port = 10257, security_groups = [], cidr_blocks = [], self = true },
+    { description = "Flannel pod network", protocol = "udp", port = 8472, security_groups = [], cidr_blocks = [], self = true }    
   ]
 }
 
@@ -216,9 +217,10 @@ resource "aws_security_group" "oc_app" {
       description = ingress.value.description
       from_port = ingress.value.port
       to_port = ingress.value.port
-      protocol = "tcp"
+      protocol = ingress.value.protocol
       security_groups = ingress.value.security_groups
       self = ingress.value.self
+      cidr_blocks = ingress.value.cidr_blocks
     }
   }
   
@@ -274,7 +276,7 @@ resource "aws_db_parameter_group" "oc" {
   
   tags = var.db_parameter_group_tags
 }
-/*
+
 resource "aws_db_instance" "oc" {
   allocated_storage = var.db_instance["allocated_storage"]
   max_allocated_storage = var.db_instance["max_allocated_storage"]
@@ -307,7 +309,7 @@ resource "aws_db_instance" "oc" {
   
   tags = var.db_instance_tags
 }
-*/
+
 resource "aws_key_pair" "oc" {
   key_name = var.key_name
   public_key = file(var.path_to_public_key)
@@ -460,7 +462,7 @@ resource "null_resource" "oc_k8s_cluster" {
     working_dir = "../"
     command = <<-EOT
     aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_k8s_master.id} ${aws_instance.oc_k8s_worker.id} && \
-    ansible-playbook -i aws_inventory site.yml
+    ansible-playbook --inventory aws_inventory --tags "setup-k8s" --verbose site.yml
     EOT
   }  
 
@@ -470,4 +472,29 @@ resource "null_resource" "oc_k8s_cluster" {
   }
   
   depends_on = [null_resource.oc_bastion] 
+}
+
+resource "null_resource" "oc_k8s" {
+  
+  provisioner "local-exec" {
+    working_dir = "../roles/owncloud/files/"
+    command = <<-EOT
+    sed -i 's/TEMP_DB_ADDRESS/${aws_db_instance.oc.address}/' 02-deployment.yml
+    EOT
+  }   
+  
+  provisioner "local-exec" {
+    working_dir = "../"
+    command = <<-EOT
+    aws rds wait db-instance-available --db-instance-identifier ${aws_db_instance.oc.identifier} && \
+    ansible-playbook --inventory aws_inventory --tags "deploy-app" --verbose site.yml
+    EOT
+  }
+
+  triggers = {
+    k8s_cluster_id = null_resource.oc_k8s_cluster.id
+    db_instance_id = aws_db_instance.oc.id
+  }
+  
+  depends_on = [null_resource.oc_k8s_cluster] 
 }
