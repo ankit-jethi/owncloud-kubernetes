@@ -1,0 +1,4 @@
+# This file will be created from the terraform apply command.
+# It will look something like this.
+
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyCommand="ssh -o StrictHostKeyChecking=no -W %h:%p -q <username@public_ip_address_of_bastion>"'
