@@ -1,4 +1,3 @@
-
 output "db_hostname" {
   description = "The hostname of the RDS instance in address:port format."
   value = aws_db_instance.oc.endpoint
@@ -27,4 +26,9 @@ output "k8s_master_private_ip" {
 output "k8s_worker_private_ip" {
   description = "Private IP address of the K8s worker instance."
   value = aws_instance.oc_k8s_worker.private_ip
+}
+
+output "lb_dns_name" {
+  description = "DNS name of the Load Balancer."
+  value = aws_lb.oc.dns_name
 }

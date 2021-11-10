@@ -498,3 +498,58 @@ resource "null_resource" "oc_k8s" {
   
   depends_on = [null_resource.oc_k8s_cluster] 
 }
+
+resource "aws_lb_target_group" "oc" {
+  name = var.lb_target_group_name
+  protocol = "TCP"
+  port = 30000
+  preserve_client_ip = true
+  target_type = "instance"
+  vpc_id = aws_vpc.oc.id
+
+  stickiness {
+    enabled = true
+    type = "source_ip"
+  }
+  
+  health_check {
+    healthy_threshold = 2
+    unhealthy_threshold = 2
+    interval = 10
+    protocol = "TCP"
+    port = "traffic-port"
+  }
+  
+  tags = var.lb_target_group_tags
+}
+
+resource "aws_lb_target_group_attachment" "oc" {
+  for_each = {
+    oc_k8s_master = aws_instance.oc_k8s_master.id
+    oc_k8s_worker = aws_instance.oc_k8s_worker.id
+  }
+
+  target_group_arn = aws_lb_target_group.oc.arn
+  target_id = each.value
+}
+
+resource "aws_lb" "oc" {
+  name = var.lb_name
+  internal = false
+  load_balancer_type = "network"
+  subnets = [aws_subnet.oc_public_1.id, aws_subnet.oc_public_2.id]
+  ip_address_type = "ipv4"
+  
+  tags = var.lb_tags
+}
+
+resource "aws_lb_listener" "oc_http" {
+  load_balancer_arn = aws_lb.oc.arn
+  protocol = "TCP"
+  port = 80
+  
+  default_action {
+    type = "forward"
+    target_group_arn = aws_lb_target_group.oc.arn
+  }
+}

@@ -238,3 +238,24 @@ variable "k8s_instance_login_user" {
   description = "Name of the login user of the K8s instances."
   type = string
 }
+
+variable "lb_name" {
+  description = "Name of the Load Balancer."
+  type = string
+}
+
+variable "lb_tags" {
+  description = "Tags for the Load Balancer."
+  type = map(string)
+}
+
+variable "lb_target_group_name" {
+  description = "Name of the Load Balancer target group."
+  type = string
+}
+
+variable "lb_target_group_tags" {
+  description = "Tags for the Load Balancer target group."
+  type = map(string)
+}
+
