@@ -1,17 +1,31 @@
-- name: Common steps for k8s cluster
-  hosts: all # master and worker nodes
+- name: common steps for k8s cluster
+  hosts: k8s # master and worker nodes
   become: yes
   roles:
     - common-k8s
+  tags:
+    - setup-k8s
 
-- name: k8s master
+- name: setup k8s master
   hosts: master
   become: yes
   roles:
     - k8s-master
+  tags:
+    - setup-k8s
 
-- name: k8s worker
+- name: setup k8s worker
   hosts: worker
   become: yes
   roles:
     - k8s-worker
+  tags:
+    - setup-k8s
+
+- name: deploy owncloud
+  hosts: master
+  roles:
+    - owncloud
+  tags:
+    - deploy-app
+
