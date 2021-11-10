@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: owncloud-deployment
+  labels:
+    app: owncloud
+  namespace: owncloud-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: owncloud
+  template:
+    metadata:
+      labels:
+        app: owncloud
+    spec:
+      containers:
+        - image: owncloud/server:10.6.0-amd64
+          name: owncloud
+          env:
+            - name: OWNCLOUD_DOMAIN
+              value: < PLACEHOLDER >
+            - name: OWNCLOUD_DB_TYPE
+              value: < PLACEHOLDER >
+            - name: OWNCLOUD_DB_HOST
+              value: < PLACEHOLDER >
+            - name: OWNCLOUD_DB_NAME
+              value: < PLACEHOLDER >
+            - name: OWNCLOUD_DB_USERNAME
+              value: < PLACEHOLDER >
+            - name: OWNCLOUD_DB_PASSWORD
+              value: < PLACEHOLDER >
+            - name: OWNCLOUD_ADMIN_USERNAME
+              value: < PLACEHOLDER >
+            - name: OWNCLOUD_ADMIN_PASSWORD
+              value: < PLACEHOLDER >
+          ports:
+            - containerPort: 8080
+      restartPolicy: Always
+
