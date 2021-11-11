@@ -202,6 +202,30 @@ resource "aws_security_group" "oc_app" {
   tags = var.app_security_group_tags
 }
 
+resource "aws_security_group" "oc_efs" {
+  name = var.efs_security_group_name
+  description = var.efs_security_group_description
+  vpc_id = aws_vpc.oc.id
+
+  ingress {
+      description = "EFS access from the app servers."
+      from_port = 2049
+      to_port = 2049
+      protocol = "tcp"
+      security_groups = [aws_security_group.oc_app.id]
+  }
+  
+  egress {
+      description = "Allow all outbound traffic."  
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }  
+
+  tags = var.efs_security_group_tags
+}
+
 resource "aws_security_group" "oc_database" {
   name = var.database_security_group_name
   description = var.database_security_group_description
@@ -421,6 +445,7 @@ resource "null_resource" "oc_k8s_cluster" {
     working_dir = "../group_vars"
     command = <<-EOT
     sed -i 's/^admin_user.*/admin_user: ${var.k8s_instance_login_user}/' all.yml && \
+    sed -i 's/^aws_efs_dns_name.*/aws_efs_dns_name: ${aws_efs_file_system.oc.dns_name}/' all.yml && \
     sed -i 's/^apiserver_advertise_address.*/apiserver_advertise_address: ${aws_instance.oc_k8s_master.private_ip}/' all.yml
     EOT
   }   
@@ -520,3 +545,37 @@ resource "aws_lb_listener" "oc_http" {
     target_group_arn = aws_lb_target_group.oc.arn
   }
 }
+
+resource "aws_efs_file_system" "oc" {
+  encrypted = var.efs_file_system["encrypted"]
+  
+  lifecycle_policy {
+    transition_to_ia = var.efs_file_system["transition_to_ia"]
+  }
+  
+  lifecycle_policy {
+    transition_to_primary_storage_class = var.efs_file_system["transition_to_primary_storage_class"]
+  }  
+  
+  tags = var.efs_file_system_tags
+}
+
+resource "aws_efs_backup_policy" "oc" {
+  file_system_id = aws_efs_file_system.oc.id
+  
+  backup_policy {
+    status = var.efs_file_system["automatic_backups"]
+  }
+}
+
+resource "aws_efs_mount_target" "oc_private" {
+  for_each = {
+    oc_private_1 = aws_subnet.oc_private_1.id
+    oc_private_2 = aws_subnet.oc_private_2.id
+  }
+
+  file_system_id = aws_efs_file_system.oc.id
+  subnet_id = each.value
+  security_groups = [aws_security_group.oc_efs.id]
+}
+

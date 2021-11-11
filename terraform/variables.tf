@@ -99,6 +99,21 @@ variable "app_security_group_tags" {
   type = map(string)
 }
 
+variable "efs_security_group_name" {
+  description = "Name for the EFS Security Group."
+  type = string
+}
+
+variable "efs_security_group_description" {
+  description = "Description for the EFS Security Group."
+  type = string
+}
+
+variable "efs_security_group_tags" {
+  description = "Tags for the EFS Security Group."
+  type = map(string)
+}
+
 variable "database_security_group_name" {
   description = "Name for the Database Security Group."
   type = string
@@ -241,6 +256,16 @@ variable "lb_target_group_name" {
 
 variable "lb_target_group_tags" {
   description = "Tags for the Load Balancer target group."
+  type = map(string)
+}
+
+variable "efs_file_system" {
+  description = "A map of all the data required to setup the EFS file system."
+  type = map(string)
+}
+
+variable "efs_file_system_tags" {
+  description = "Tags for the EFS file system."
   type = map(string)
 }
 

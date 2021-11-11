@@ -32,3 +32,14 @@ output "lb_dns_name" {
   description = "DNS name of the Load Balancer."
   value = aws_lb.oc.dns_name
 }
+
+output "efs_dns_name" {
+  description = "DNS name of the EFS filesystem."
+  value = aws_efs_file_system.oc.dns_name
+}
+
+output "efs_size_in_bytes" {
+  description = "The latest known metered size (in bytes) of data stored in the file system."
+  value = aws_efs_file_system.oc.size_in_bytes
+}
+
