@@ -468,12 +468,12 @@ resource "null_resource" "oc_k8s_cluster" {
 
 resource "null_resource" "oc_k8s" {
   
-  provisioner "local-exec" {
-    working_dir = "../roles/owncloud/files/"
-    command = <<-EOT
-    sed -i 's/TEMP_DB_ADDRESS/${aws_db_instance.oc.address}/' 02-deployment.yml
-    EOT
-  }   
+#  provisioner "local-exec" {
+#    working_dir = "../roles/owncloud/files/"
+#    command = <<-EOT
+#    sed -i 's/TEMP_DB_ADDRESS/${aws_db_instance.oc.address}/' 02-deployment.yml
+#    EOT
+#  }
   
   provisioner "local-exec" {
     working_dir = "../"

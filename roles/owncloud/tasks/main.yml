@@ -4,12 +4,12 @@
     state: directory
 
 - name: Copy owncloud k8s files
-  ansible.builtin.copy:
+  ansible.builtin.template:
     src: "{{ item }}"
     dest: "/home/{{ admin_user }}/owncloud/"
-  loop: ['01-namespace.yml', '02-deployment.yml', '03-service.yml']
+  loop: ['01-namespace.yml', '02-persistent-volume.yml', '03-persistent-volume-claim.yml', '04-config-map.yml', '05-secret.yml', '06-deployment.yml', '07-service.yml']
   register: owncloud_k8s_files
-  
+
 - name: Deploy owncloud
   ansible.builtin.command:
     cmd: kubectl apply -f "/home/{{ admin_user }}/owncloud/"

@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: owncloud-deployment
+  labels:
+    app: owncloud
+  namespace: owncloud-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: owncloud
+  template:
+    metadata:
+      labels:
+        app: owncloud
+    spec:
+      volumes:
+        - name: owncloud-data
+          persistentVolumeClaim:
+            claimName: owncloud-efs-pvc
+      containers:
+        - name: owncloud
+          image: owncloud/server:10.6.0-amd64
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: "/mnt/data"
+              name: owncloud-data
+          env:
+            - name: OWNCLOUD_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: owncloud-configmap
+                  key: owncloud-domain
+            - name: OWNCLOUD_DB_TYPE
+              value: mysql
+            - name: OWNCLOUD_DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: owncloud-secret
+                  key: owncloud-db-host
+            - name: OWNCLOUD_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: owncloud-secret
+                  key: owncloud-db-name
+            - name: OWNCLOUD_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: owncloud-secret
+                  key: owncloud-db-username
+            - name: OWNCLOUD_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: owncloud-secret
+                  key: owncloud-db-password
+            - name: OWNCLOUD_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: owncloud-secret
+                  key: owncloud-admin-username
+            - name: OWNCLOUD_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: owncloud-secret
+                  key: owncloud-admin-password
+      restartPolicy: Always
+
