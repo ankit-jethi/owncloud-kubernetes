@@ -6,7 +6,11 @@ metadata:
     app: owncloud
   namespace: owncloud-namespace
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: owncloud
@@ -28,6 +32,8 @@ spec:
             - mountPath: "/mnt/data"
               name: owncloud-data
           env:
+            - name: OWNCLOUD_LOG_TIMEZONE
+              value: Asia/Kolkata
             - name: OWNCLOUD_DOMAIN
               valueFrom:
                 configMapKeyRef:
@@ -65,5 +71,12 @@ spec:
                 secretKeyRef:
                   name: owncloud-secret
                   key: owncloud-admin-password
+          readinessProbe:
+            exec:
+              command:
+                - /usr/bin/healthcheck
+            timeoutSeconds: 10
+            periodSeconds: 30
+            failureThreshold: 5
       restartPolicy: Always
 
