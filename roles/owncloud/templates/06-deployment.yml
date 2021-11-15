@@ -32,7 +32,7 @@ spec:
             - mountPath: "/mnt/data"
               name: owncloud-data
           env:
-            - name: OWNCLOUD_LOG_TIMEZONE
+            - name: TZ
               value: Asia/Kolkata
             - name: OWNCLOUD_DOMAIN
               valueFrom:
