@@ -1,0 +1,37 @@
+- name: Install filebeat dependencies
+  ansible.builtin.apt:
+    update_cache: yes
+    name: "apt-transport-https"
+    state: present
+
+- name: Add filebeat's GPG key
+  ansible.builtin.apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+    
+- name: Setup filebeat's repository
+  ansible.builtin.apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/{{ filebeat_version }}/apt stable main"
+    state: present
+
+- name: Install filebeat
+  ansible.builtin.apt:
+    name: "{{ filebeat_package }}"
+    state: present
+
+- name: Copy filebeat config
+  ansible.builtin.template:
+    src: filebeat.yml.j2
+    dest: /etc/filebeat/filebeat.yml
+    
+- name: Enable system module
+  ansible.builtin.command:
+    cmd: filebeat modules enable system
+    creates: /etc/filebeat/modules.d/system.yml
+ 
+- name: Start filebeat
+  ansible.builtin.service:
+    enabled: yes
+    name: filebeat
+    state: started
+

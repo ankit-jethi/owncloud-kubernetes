@@ -1,0 +1,37 @@
+- name: Install metricbeat dependencies
+  ansible.builtin.apt:
+    update_cache: yes
+    name: "apt-transport-https"
+    state: present
+
+- name: Add metricbeat's GPG key
+  ansible.builtin.apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Setup metricbeat's repository
+  ansible.builtin.apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/{{ metricbeat_version }}/apt stable main"
+    state: present
+
+- name: Install metricbeat
+  ansible.builtin.apt:
+    name: "{{ metricbeat_package }}"
+    state: present
+
+- name: Copy metricbeat config
+  ansible.builtin.template:
+    src: metricbeat.yml.j2
+    dest: /etc/metricbeat/metricbeat.yml
+
+- name: Enable system module
+  ansible.builtin.command:
+    cmd: metricbeat modules enable system
+    creates: /etc/metricbeat/modules.d/system.yml
+
+- name: Start metricbeat
+  ansible.builtin.service:
+    enabled: yes
+    name: metricbeat
+    state: started
+
