@@ -1,6 +1,7 @@
-# Ansible
+# ansible
 
-ansible_python_interpreter: /usr/bin/python3
+ansible_python_interpreter: "/usr/bin/python3"
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
 # k8s cluster - master and worker nodes
 
@@ -8,8 +9,60 @@ admin_user: < managed_by_terraform >
 aws_efs_dns_name: < managed_by_terraform >
 docker_packages: ['docker-ce=5:20.10.6~3-0~ubuntu-bionic', 'docker-ce-cli=5:20.10.6~3-0~ubuntu-bionic', 'containerd.io']
 k8s_packages: ['kubelet=1.21.3-00', 'kubeadm=1.21.3-00', 'kubectl=1.21.3-00']
-k8s_dpkg_selections: hold
+k8s_dpkg_selections: "hold"
 
 # k8s master
 
 apiserver_advertise_address: < managed_by_terraform >
+
+# elasticsearch
+
+es_version: "6.8.19"
+es_config:
+  node.name: "master"
+  network.host: "0.0.0.0"
+  discovery.zen.ping.unicast.hosts: "localhost"  # For version: 6.x
+  #discovery.seed_hosts: "localhost" # For version: 7.x
+  discovery.type: "single-node"
+
+#es_allow_downgrades: true
+
+es_users:
+  native:
+    kibana:
+      password: < hidden >
+
+es_api_basic_auth_username: "elastic"
+es_api_basic_auth_password: < hidden >
+
+# kibana
+
+kibana_version: "6.x"
+kibana_package: "kibana=6.8.19"
+kibana_elasticsearch_username: "kibana"
+kibana_elasticsearch_password: < hidden >
+
+# beats
+
+filebeat_version: "6.x"
+filebeat_package: "filebeat=6.8.19"
+metricbeat_version: "6.x"
+metricbeat_package: "metricbeat=6.8.19"
+heartbeat_version: "6.x"
+heartbeat_package: "heartbeat-elastic=6.8.19"
+kibana_host: < managed_by_terraform >
+elasticsearch_host: < managed_by_terraform >
+k8s_master_private_ip: < managed_by_terraform >
+k8s_worker_private_ip: < managed_by_terraform >
+
+# nginx
+
+nginx_package: "nginx=1.18.0-2~bionic"
+kibana_domain: < managed_by_terraform >
+
+# kibana ssl setup
+
+kibana_ssl_setup: true
+test_certificate: true
+force_renewal: false
+email_for_lets_encrypt: < managed_by_terraform >
