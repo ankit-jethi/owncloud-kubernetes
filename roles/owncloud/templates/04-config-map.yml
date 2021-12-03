@@ -4,5 +4,6 @@ metadata:
   name: owncloud-configmap
   namespace: owncloud-namespace  
 data:
-  owncloud-domain: localhost:8080
+  owncloud-domain: < managed_by_terraform >
+  owncloud-db-host: < managed_by_terraform >
 
