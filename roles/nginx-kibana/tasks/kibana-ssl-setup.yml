@@ -1,0 +1,21 @@
+- name: Install certbot
+  community.general.snap:
+    name: certbot
+    classic: yes
+    state: present
+  register: install_certbot
+    
+- name: Confirm plugin containment level is classic
+  ansible.builtin.command:
+    cmd: snap set certbot trust-plugin-with-root=ok
+  when: install_certbot is changed
+  
+- name: Install certbot DNS plugin
+  community.general.snap:
+    name: certbot-dns-route53
+    state: present
+  
+- name: Run certbot to get the certificate
+  ansible.builtin.command:
+    cmd: certbot run --dns-route53 --domain {{ kibana_domain }} --domain www.{{ kibana_domain }} --verbose --agree-tos --email {{ email_for_lets_encrypt }} --no-eff-email --installer nginx {% if test_certificate == true %} --test-cert {% endif %} {% if force_renewal == true %} --force-renewal {% endif %} --non-interactive
+
