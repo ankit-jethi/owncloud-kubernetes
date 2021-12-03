@@ -10,4 +10,10 @@
 [k8s:children]
 master
 worker
-  
+
+[bastion]
+<public_ip_address_of_bastion> ansible_user=<login_user>
+
+[elk]
+<public_ip_address_of_elk> ansible_user=<login_user>
+
