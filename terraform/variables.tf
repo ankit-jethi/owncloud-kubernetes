@@ -79,7 +79,7 @@ variable "bastion_security_group_tags" {
   type = map(string)
 }
 
-variable "cidr_blocks_ssh_bastion" {
+variable "allowed_cidr_blocks_ssh" {
   description = "A list of CIDR blocks to be allowed SSH access to the Bastion."
   type = list(string)
 }
@@ -129,6 +129,21 @@ variable "database_security_group_tags" {
   type = map(string)
 }
 
+variable "elk_security_group_name" {
+  description = "Name for the Elastic Stack Security Group."
+  type = string
+}
+
+variable "elk_security_group_description" {
+  description = "Description for the Elastic Stack Security Group."
+  type = string
+}
+
+variable "elk_security_group_tags" {
+  description = "Tags for the Elastic Stack Security Group."
+  type = map(string)
+}
+
 variable "db_subnet_group_name" {
   description = "Name for the Database Subnet group."
   type = string
@@ -172,6 +187,11 @@ variable "db_parameter_group_tags" {
 variable "db_instance" {
   description = "A map of all the data required to setup the Database instance."
   type = map(string)
+}
+
+variable "enabled_cloudwatch_logs_exports" {
+  description = "A list of all the log types that you want to export to Cloudwatch."
+  type = list(string)
 }
 
 variable "db_instance_tags" {
@@ -266,6 +286,76 @@ variable "efs_file_system" {
 
 variable "efs_file_system_tags" {
   description = "Tags for the EFS file system."
+  type = map(string)
+}
+
+variable "elk" {
+  description = "A map of all the data required to setup the Elastic Stack instance."
+  type = map(string)
+}
+
+variable "elk_tags" {
+  description = "Tags for the Elastic Stack instance."
+  type = map(string)
+}
+
+variable "elk_instance_login_user" {
+  description = "Name of the login user of the Elastic Stack instance."
+  type = string
+}
+
+variable "domain_name" {
+  description = "Your domain name for eg. sabkacloud.xyz"
+  type = string
+}
+
+variable "email_address" {
+  description = "Your email address for Let's Encrypt certificate."
+  type = string
+}
+
+variable "delegation_set_id" {
+  description = "The ID of your Route 53 delegation set for use with the Public Hosted Zone."
+  type = string
+}
+
+variable "iam_role" {
+  description = "A map of all the data required to setup the IAM role."
+  type = map(string)
+}
+
+variable "iam_role_tags" {
+  description = "Tags for the IAM role."
+  type = map(string)
+}
+
+variable "instance_profile_name" {
+  description = "Name of the instance profile."
+  type = string
+}
+
+variable "instance_profile_tags" {
+  description = "Tags for the instance profile."
+  type = map(string)
+}
+
+variable "public_hosted_zone_description" {
+  description = "Description of the Public Hosted Zone."
+  type = string
+}
+
+variable "public_hosted_zone_tags" {
+  description = "Tags for the Public Hosted Zone."
+  type = map(string)
+}
+
+variable "private_hosted_zone_description" {
+  description = "Description of the Private Hosted Zone."
+  type = string
+}
+
+variable "private_hosted_zone_tags" {
+  description = "Tags for the Private Hosted Zone."
   type = map(string)
 }
 

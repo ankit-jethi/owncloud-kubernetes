@@ -52,14 +52,6 @@ resource "aws_subnet" "oc_private_2" {
   tags = var.subnet_tags["oc_private_2"]
 }
 
-resource "aws_subnet" "oc_private_3" {
-  vpc_id = aws_vpc.oc.id
-  cidr_block = var.subnet_cidr_blocks["oc_private_3"]
-  availability_zone = var.subnet_availability_zones["oc_private_3"]
-  
-  tags = var.subnet_tags["oc_private_3"]
-}
-
 resource "aws_subnet" "oc_database_1" {
   vpc_id = aws_vpc.oc.id
   cidr_block = var.subnet_cidr_blocks["oc_database_1"]
@@ -146,6 +138,14 @@ locals {
     { description = "kube-controller-manager", protocol = "tcp", port = 10257, security_groups = [], cidr_blocks = [], self = true },
     { description = "Flannel pod network", protocol = "udp", port = 8472, security_groups = [], cidr_blocks = [], self = true }    
   ]
+  
+  elk_security_group_ingress = [
+    { description = "SSH access from your IP address(es).", port = 22, security_groups = [], cidr_blocks = var.allowed_cidr_blocks_ssh },
+    { description = "Elasticsearch - Beats", port = 9200, security_groups = [aws_security_group.oc_app.id, aws_security_group.oc_bastion.id], cidr_blocks = [] },
+    { description = "Kibana - Beats", port = 5601, security_groups = [aws_security_group.oc_app.id, aws_security_group.oc_bastion.id], cidr_blocks = [] },
+    { description = "Kibana - HTTP", port = 80, security_groups = [], cidr_blocks = var.allowed_cidr_blocks_ssh },
+    { description = "Kibana - HTTPS", port = 443, security_groups = [], cidr_blocks = var.allowed_cidr_blocks_ssh }
+  ]
 }
 
 resource "aws_security_group" "oc_bastion" {
@@ -158,7 +158,7 @@ resource "aws_security_group" "oc_bastion" {
       from_port = 22
       to_port = 22
       protocol = "tcp"
-      cidr_blocks = var.cidr_blocks_ssh_bastion
+      cidr_blocks = var.allowed_cidr_blocks_ssh
   }
   
   egress {
@@ -242,6 +242,35 @@ resource "aws_security_group" "oc_database" {
   tags = var.database_security_group_tags    
 }
 
+resource "aws_security_group" "oc_elk" {
+  name = var.elk_security_group_name
+  description = var.elk_security_group_description
+  vpc_id = aws_vpc.oc.id
+  
+  dynamic "ingress" {
+    for_each = local.elk_security_group_ingress
+    
+    content {
+      description = ingress.value.description
+      from_port = ingress.value.port
+      to_port = ingress.value.port
+      protocol = "tcp"
+      security_groups = ingress.value.security_groups
+      cidr_blocks = ingress.value.cidr_blocks
+    }
+  }
+  
+  egress {
+      description = "Allow all outbound traffic."  
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }  
+  
+  tags = var.elk_security_group_tags
+}
+
 resource "aws_db_subnet_group" "oc" {
   name = var.db_subnet_group_name
   description = var.db_subnet_group_description
@@ -292,6 +321,7 @@ resource "aws_db_instance" "oc" {
   copy_tags_to_snapshot = var.db_instance["copy_tags_to_snapshot"]  
   maintenance_window = var.db_instance["maintenance_window"]
   auto_minor_version_upgrade = var.db_instance["auto_minor_version_upgrade"]
+  enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
   
   delete_automated_backups = var.db_instance["delete_automated_backups"]
   skip_final_snapshot = var.db_instance["skip_final_snapshot"]
@@ -371,7 +401,7 @@ resource "null_resource" "oc_bastion" {
   }
 
   triggers = {
-    bastion_instance_id = data.aws_instance.oc_bastion.id
+    bastion_instance_public_ip = data.aws_instance.oc_bastion.public_ip
   }
 }
 
@@ -379,7 +409,6 @@ resource "aws_instance" "oc_k8s_master" {
   ami = var.k8s_master["ami"]
   instance_type = var.k8s_master["instance_type"]
   key_name = aws_key_pair.oc.id
-  private_ip = var.k8s_master["private_ip"]
   subnet_id = aws_subnet.oc_private_1.id
   vpc_security_group_ids = [aws_security_group.oc_app.id]
   
@@ -402,7 +431,6 @@ resource "aws_instance" "oc_k8s_worker" {
   ami = var.k8s_worker["ami"]
   instance_type = var.k8s_worker["instance_type"]
   key_name = aws_key_pair.oc.id
-  private_ip = var.k8s_worker["private_ip"]
   subnet_id = aws_subnet.oc_private_2.id
   vpc_security_group_ids = [aws_security_group.oc_app.id]
   
@@ -419,76 +447,6 @@ resource "aws_instance" "oc_k8s_worker" {
   
   tags = var.k8s_worker_tags
   volume_tags = var.k8s_worker_tags
-}
-
-resource "null_resource" "oc_k8s_cluster" {
-
-  provisioner "local-exec" {
-    working_dir = "../"
-    command = <<-EOT
-    cat > aws_inventory <<EOF
-    [master]
-    ${aws_instance.oc_k8s_master.private_ip} ansible_user=${var.k8s_instance_login_user}
-    
-    [worker]
-    ${aws_instance.oc_k8s_worker.private_ip} ansible_user=${var.k8s_instance_login_user}
-    
-    [k8s:children]
-    master
-    worker
-    
-    EOF
-    EOT
-  }
-  
-  provisioner "local-exec" {
-    working_dir = "../group_vars"
-    command = <<-EOT
-    sed -i 's/^admin_user.*/admin_user: ${var.k8s_instance_login_user}/' all.yml && \
-    sed -i 's/^aws_efs_dns_name.*/aws_efs_dns_name: ${aws_efs_file_system.oc.dns_name}/' all.yml && \
-    sed -i 's/^apiserver_advertise_address.*/apiserver_advertise_address: ${aws_instance.oc_k8s_master.private_ip}/' all.yml
-    EOT
-  }   
-  
-  provisioner "local-exec" {
-    working_dir = "../"
-    command = <<-EOT
-    aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_k8s_master.id} ${aws_instance.oc_k8s_worker.id} && \
-    ansible-playbook --inventory aws_inventory --tags "setup-k8s" --verbose site.yml
-    EOT
-  }  
-
-  triggers = {
-    k8s_master_id = aws_instance.oc_k8s_master.id
-    k8s_worker_id = aws_instance.oc_k8s_worker.id
-  }
-  
-  depends_on = [null_resource.oc_bastion] 
-}
-
-resource "null_resource" "oc_k8s" {
-  
-#  provisioner "local-exec" {
-#    working_dir = "../roles/owncloud/files/"
-#    command = <<-EOT
-#    sed -i 's/TEMP_DB_ADDRESS/${aws_db_instance.oc.address}/' 02-deployment.yml
-#    EOT
-#  }
-  
-  provisioner "local-exec" {
-    working_dir = "../"
-    command = <<-EOT
-    aws rds wait db-instance-available --db-instance-identifier ${aws_db_instance.oc.identifier} && \
-    ansible-playbook --inventory aws_inventory --tags "deploy-app" --verbose site.yml
-    EOT
-  }
-
-  triggers = {
-    k8s_cluster_id = null_resource.oc_k8s_cluster.id
-    db_instance_id = aws_db_instance.oc.id
-  }
-  
-  depends_on = [null_resource.oc_k8s_cluster] 
 }
 
 resource "aws_lb_target_group" "oc" {
@@ -579,3 +537,258 @@ resource "aws_efs_mount_target" "oc_private" {
   security_groups = [aws_security_group.oc_efs.id]
 }
 
+resource "aws_instance" "oc_elk" {
+  ami = var.elk["ami"]
+  instance_type = var.elk["instance_type"]
+  key_name = aws_key_pair.oc.id
+  subnet_id = aws_subnet.oc_public_2.id
+  vpc_security_group_ids = [aws_security_group.oc_elk.id]
+  iam_instance_profile = aws_iam_instance_profile.oc_ec2_route53.name
+  
+  root_block_device {
+    volume_size = var.elk["volume_size"]
+    volume_type = var.elk["volume_type"]
+    encrypted = var.elk["encrypted"]
+    delete_on_termination = var.elk["delete_on_termination"]
+  }
+  
+  credit_specification {
+    cpu_credits = var.elk["cpu_credits"]
+  }
+  
+  tags = var.elk_tags
+  volume_tags = var.elk_tags
+}
+
+resource "null_resource" "oc_ansible_setup" {
+
+  provisioner "local-exec" {
+    working_dir = "../"
+    command = <<-EOT
+    cat > aws_inventory <<EOF
+    [master]
+    ${aws_instance.oc_k8s_master.private_ip} ansible_user=${var.k8s_instance_login_user}
+    
+    [worker]
+    ${aws_instance.oc_k8s_worker.private_ip} ansible_user=${var.k8s_instance_login_user}
+    
+    [k8s:children]
+    master
+    worker
+    
+    [bastion]
+    ${data.aws_instance.oc_bastion.public_ip} ansible_user=${var.bastion_login_user}
+    
+    [elk]
+    ${aws_instance.oc_elk.public_ip} ansible_user=${var.elk_instance_login_user}
+    
+    EOF
+    EOT
+  }
+
+  provisioner "local-exec" {
+    working_dir = "../group_vars"
+    command = <<-EOT
+    sed -i 's/^admin_user.*/admin_user: "${var.k8s_instance_login_user}"/' all.yml && \
+    sed -i 's/^aws_efs_dns_name.*/aws_efs_dns_name: "${aws_efs_file_system.oc.dns_name}"/' all.yml && \
+    sed -i 's/^apiserver_advertise_address.*/apiserver_advertise_address: "${aws_instance.oc_k8s_master.private_ip}"/' all.yml && \
+    sed -i 's/^kibana_host.*/kibana_host: "${aws_instance.oc_elk.private_ip}:5601"/' all.yml && \
+    sed -i 's/^elasticsearch_host.*/elasticsearch_host: "${aws_instance.oc_elk.private_ip}:9200"/' all.yml && \
+    sed -i 's/^k8s_master_private_ip.*/k8s_master_private_ip: "${aws_instance.oc_k8s_master.private_ip}"/' all.yml && \
+    sed -i 's/^k8s_worker_private_ip.*/k8s_worker_private_ip: "${aws_instance.oc_k8s_worker.private_ip}"/' all.yml && \
+    sed -i 's/^kibana_domain.*/kibana_domain: "kibana.${var.domain_name}"/' all.yml && \
+    sed -i 's/^email_for_lets_encrypt.*/email_for_lets_encrypt: "${var.email_address}"/' all.yml
+    EOT
+  }    
+  
+  triggers = {
+    k8s_master_private_ip = aws_instance.oc_k8s_master.private_ip
+    k8s_worker_private_ip = aws_instance.oc_k8s_worker.private_ip
+    bastion_instance_public_ip = data.aws_instance.oc_bastion.public_ip
+    elk_instance_public_ip = aws_instance.oc_elk.public_ip
+    aws_efs_dns_name = aws_efs_file_system.oc.dns_name
+  }
+}
+
+resource "null_resource" "oc_k8s_and_elk" {
+
+  provisioner "local-exec" {
+    working_dir = "../"
+    command = <<-EOT
+    aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_k8s_master.id} ${aws_instance.oc_k8s_worker.id} && \
+    ansible-playbook --inventory aws_inventory --skip-tags "always" --tags "setup-k8s" --verbose site.yml && \
+    aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_elk.id} ${data.aws_instance.oc_bastion.id} && \
+    ansible-playbook --inventory aws_inventory --tags "elastic-stack-nginx,beats" --verbose site.yml
+    EOT
+  } 
+
+  triggers = {
+    k8s_master_id = aws_instance.oc_k8s_master.id
+    k8s_worker_id = aws_instance.oc_k8s_worker.id
+    elk_instance_id = aws_instance.oc_elk.id
+    bastion_instance_id = data.aws_instance.oc_bastion.id
+  }
+  
+  depends_on = [null_resource.oc_ansible_setup, null_resource.oc_bastion]
+}
+
+resource "null_resource" "oc_deploy_owncloud" {
+
+  provisioner "local-exec" {
+    working_dir = "../roles/owncloud/templates/"
+    command = <<-EOT
+    sed -i 's/owncloud-domain.*/owncloud-domain: "${var.domain_name}"/' 04-config-map.yml && \
+    sed -i 's/owncloud-db-host.*/owncloud-db-host: "${aws_route53_record.oc_database.fqdn}"/' 04-config-map.yml
+    EOT
+  }
+
+  provisioner "local-exec" {
+    working_dir = "../"
+    command = <<-EOT
+    aws rds wait db-instance-available --db-instance-identifier ${aws_db_instance.oc.identifier} && \
+    ansible-playbook --inventory aws_inventory --skip-tags "always" --tags "deploy-app" --verbose site.yml
+    EOT
+  }
+
+  triggers = {
+    k8s_and_elk_id = null_resource.oc_k8s_and_elk.id
+    aws_efs_dns_name = aws_efs_file_system.oc.dns_name
+    db_instance_id = aws_db_instance.oc.id    
+  }
+  
+  depends_on = [null_resource.oc_k8s_and_elk, aws_efs_mount_target.oc_private]
+}
+
+
+resource "aws_iam_role" "oc_ec2_route53" {
+  name = var.iam_role["name"]
+  description = var.iam_role["description"]
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+
+  inline_policy {
+    name = var.iam_role["policy_name"]
+    policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:ListHostedZones",
+                "route53:GetChange"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:ChangeResourceRecordSets"
+            ],
+            "Resource": [
+                "arn:aws:route53:::hostedzone/${aws_route53_zone.oc_public.zone_id}"
+            ]
+        }
+    ]
+}
+EOF
+  }
+
+  tags = var.iam_role_tags
+}
+
+resource "aws_iam_instance_profile" "oc_ec2_route53" {
+  name = var.instance_profile_name
+  role = aws_iam_role.oc_ec2_route53.name
+  
+  tags = var.instance_profile_tags  
+}
+
+resource "aws_route53_zone" "oc_public" {
+  name = var.domain_name
+  comment = var.public_hosted_zone_description
+  delegation_set_id = var.delegation_set_id
+  force_destroy = true
+  
+  tags = var.public_hosted_zone_tags  
+}
+
+resource "aws_route53_record" "oc_app_1" {
+  zone_id = aws_route53_zone.oc_public.zone_id
+  name = ""
+  type = "A"
+  
+  alias {
+    name = aws_lb.oc.dns_name
+    zone_id = aws_lb.oc.zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "oc_app_2" {
+  zone_id = aws_route53_zone.oc_public.zone_id
+  name = "www.${var.domain_name}"
+  type = "CNAME"
+  ttl = "10"
+  records = [var.domain_name]
+}
+
+resource "aws_route53_record" "oc_kibana_1" {
+  zone_id = aws_route53_zone.oc_public.zone_id
+  name = "kibana.${var.domain_name}"
+  type = "A"
+  ttl = "10"
+  records = [aws_instance.oc_elk.public_ip]
+}
+
+resource "aws_route53_record" "oc_kibana_2" {
+  zone_id = aws_route53_zone.oc_public.zone_id
+  name = "www.kibana.${var.domain_name}"
+  type = "CNAME"
+  ttl = "10"
+  records = ["kibana.${var.domain_name}"]
+}
+
+resource "aws_route53_record" "oc_bastion" {
+  zone_id = aws_route53_zone.oc_public.zone_id
+  name = "bastion.${var.domain_name}"
+  type = "A"
+  ttl = "10"
+  records = [data.aws_instance.oc_bastion.public_ip]
+}
+
+resource "aws_route53_zone" "oc_private" {
+  name = var.domain_name
+  comment = var.private_hosted_zone_description
+  force_destroy = true
+  
+  vpc {
+    vpc_id = aws_vpc.oc.id
+  }
+  
+  tags = var.private_hosted_zone_tags 
+}
+
+resource "aws_route53_record" "oc_database" {
+  zone_id = aws_route53_zone.oc_private.zone_id
+  name = "database.${var.domain_name}"
+  type = "CNAME"
+  ttl = "10"
+  records = [aws_db_instance.oc.address]  
+}
