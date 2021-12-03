@@ -16,16 +16,41 @@
 
 - name: setup k8s worker
   hosts: worker
-  become: yes
   roles:
     - k8s-worker
   tags:
     - setup-k8s
 
+- name: setup elasticsearch and kibana
+  hosts: elk
+  become: yes
+  roles:
+    - elastic.elasticsearch
+    - geerlingguy.kibana
+    - nginx-kibana
+  tags:
+    - elastic-stack-nginx
+    
+- name: setup filebeat and metricbeat
+  hosts: all
+  become: yes
+  roles:
+    - filebeat
+    - metricbeat
+  tags:
+    - beats
+
+- name: setup heartbeat
+  hosts: elk
+  become: yes
+  roles:
+    - heartbeat
+  tags:
+    - beats
+    
 - name: deploy owncloud
   hosts: master
   roles:
     - owncloud
   tags:
     - deploy-app
-
