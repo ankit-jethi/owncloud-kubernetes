@@ -3,3 +3,33 @@
     cmd: ./k8s_join_script.sh
     executable: /bin/bash
     creates: /etc/kubernetes/pki/ca.crt
+  become: yes
+
+- name: Create .kube directory
+  ansible.builtin.file:
+    path: "/home/{{ admin_user }}/.kube"
+    state: directory
+
+- name: Copy kubeconfig file
+  ansible.builtin.copy:
+    mode: 0600
+    src: ./kube_config
+    dest: "/home/{{ admin_user }}/.kube/config"
+    backup: yes
+
+- name: Create directory for kube-state-metrics
+  ansible.builtin.file:
+    path: "/home/{{ admin_user }}/kube-state-metrics/"
+    state: directory
+
+- name: Copy kube-state-metrics file
+  ansible.builtin.copy:
+    src: kube-state-metrics.yml
+    dest: "/home/{{ admin_user }}/kube-state-metrics/"
+  register: kube_state_metrics_file
+
+- name: Deploy kube-state-metrics
+  ansible.builtin.command:
+    cmd: kubectl apply -f "/home/{{ admin_user }}/kube-state-metrics/"
+  when: kube_state_metrics_file is changed
+
