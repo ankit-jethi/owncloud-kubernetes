@@ -16,10 +16,17 @@
   ansible.builtin.copy:
     group: "{{ admin_user }}"
     owner: "{{ admin_user }}"
+    mode: 0600
     remote_src: yes
     src: /etc/kubernetes/admin.conf
     dest: "/home/{{ admin_user }}/.kube/config"
     backup: yes
+
+- name: Get the kubeconfig file locally
+  ansible.builtin.fetch:
+    src: "/home/{{ admin_user }}/.kube/config"
+    dest: ./kube_config
+    flat: yes
 
 - name: Deploy pod network
   ansible.builtin.command:
