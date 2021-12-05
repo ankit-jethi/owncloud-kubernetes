@@ -2,7 +2,8 @@
   "exec-opts": ["native.cgroupdriver=systemd"],
   "log-driver": "json-file",
   "log-opts": {
-    "max-size": "100m"
+    "max-size": "20m",
+    "max-file": "5"
   },
   "live-restore": true,
   "storage-driver": "overlay2"
