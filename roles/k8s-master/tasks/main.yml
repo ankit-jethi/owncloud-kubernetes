@@ -3,13 +3,14 @@
     cmd: "kubeadm init --apiserver-advertise-address={{ apiserver_advertise_address }} --pod-network-cidr=10.244.0.0/16 --node-name master"
     creates: /etc/kubernetes/admin.conf
   register: create_k8s_cluster
+  become: yes
 
 - name: Create .kube directory
   ansible.builtin.file:
-    group: "{{ admin_user }}"
-    owner: "{{ admin_user }}"
+    #group: "{{ admin_user }}"
+    #owner: "{{ admin_user }}"
     path: "/home/{{ admin_user }}/.kube"
-    recurse: yes
+    #recurse: yes
     state: directory
 
 - name: Copy kubeconfig file
@@ -21,6 +22,7 @@
     src: /etc/kubernetes/admin.conf
     dest: "/home/{{ admin_user }}/.kube/config"
     backup: yes
+  become: yes
 
 - name: Get the kubeconfig file locally
   ansible.builtin.fetch:
@@ -31,13 +33,13 @@
 - name: Deploy pod network
   ansible.builtin.command:
     cmd: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-  become_user: "{{ admin_user }}"
+  #become_user: "{{ admin_user }}"
   when: create_k8s_cluster is changed
 
 - name: Remove taint to schedule pods on master
   ansible.builtin.command:
     cmd: kubectl taint nodes --all node-role.kubernetes.io/master-
-  become_user: "{{ admin_user }}"
+  #become_user: "{{ admin_user }}"
   when: create_k8s_cluster is changed
 
 - name: Get the join command
@@ -45,6 +47,7 @@
     cmd: kubeadm token create --print-join-command
   register: k8s_join_command
   when: create_k8s_cluster is changed
+  become: yes
 
 - name: Store the join command locally
   ansible.builtin.copy:
@@ -52,3 +55,10 @@
     dest: ./k8s_join_script.sh
   delegate_to: localhost
   when: create_k8s_cluster is changed
+
+- name: Import Owncloud SSL setup tasks
+  ansible.builtin.import_tasks: owncloud-ssl-setup.yml
+  when: owncloud_ssl_setup == true
+  tags:
+    - owncloud-ssl-setup
+

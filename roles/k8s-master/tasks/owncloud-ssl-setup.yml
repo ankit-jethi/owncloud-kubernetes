@@ -1,0 +1,49 @@
+- name: install pip
+  ansible.builtin.apt:
+    update_cache: yes
+    name: "python3-pip"
+    state: present
+  become: yes
+
+- name: upgrade pip
+  ansible.builtin.pip:
+    name: "{{ pip_package }}"
+    state: present
+
+- name: install certbot, boto3 and dependencies
+  ansible.builtin.pip:
+    name: "{{ certbot_and_boto3_packages }}"
+    extra_args: --user
+    state: present
+
+- name: create certbot_acm_config directory
+  ansible.builtin.file:
+    path: "/home/{{ admin_user }}/certbot_acm_config"
+    state: directory
+
+- name: copy python script
+  ansible.builtin.template:
+    src: certbot_acm.py.j2
+    dest: "/home/{{ admin_user }}/certbot_acm_config/certbot_acm.py"
+    backup: yes
+  register: python_script
+
+- name: run python script
+  ansible.builtin.command:
+    chdir: "/home/{{ admin_user }}/certbot_acm_config"
+    cmd: python3 certbot_acm.py
+  when: python_script is changed
+
+- name: setup cron for cert renewal
+  ansible.builtin.cron:
+    backup: yes
+    user: "{{ admin_user }}"
+    name: "renew certificate for {{ domain_name }}"
+    minute: "0"
+    hour: "21"
+    dom: "1,15"
+    month: "*"
+    weekday: "*"
+    job: /usr/bin/python3 /home/{{ admin_user }}/certbot_acm_config/certbot_acm.py >> /home/{{ admin_user }}/certbot_acm_config/cron_cert_renewal_logs.txt 2>&1
+    state: present
+

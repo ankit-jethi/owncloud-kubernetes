@@ -138,7 +138,7 @@ locals {
     { description = "kube-controller-manager", protocol = "tcp", port = 10257, security_groups = [], cidr_blocks = [], self = true },
     { description = "Flannel pod network", protocol = "udp", port = 8472, security_groups = [], cidr_blocks = [], self = true }    
   ]
-  
+
   elk_security_group_ingress = [
     { description = "SSH access from your IP address(es).", port = 22, security_groups = [], cidr_blocks = var.allowed_cidr_blocks_ssh },
     { description = "Elasticsearch - Beats", port = 9200, security_groups = [aws_security_group.oc_app.id, aws_security_group.oc_bastion.id], cidr_blocks = [] },
@@ -246,10 +246,10 @@ resource "aws_security_group" "oc_elk" {
   name = var.elk_security_group_name
   description = var.elk_security_group_description
   vpc_id = aws_vpc.oc.id
-  
+
   dynamic "ingress" {
     for_each = local.elk_security_group_ingress
-    
+
     content {
       description = ingress.value.description
       from_port = ingress.value.port
@@ -259,15 +259,15 @@ resource "aws_security_group" "oc_elk" {
       cidr_blocks = ingress.value.cidr_blocks
     }
   }
-  
+
   egress {
-      description = "Allow all outbound traffic."  
+      description = "Allow all outbound traffic."
       from_port = 0
       to_port = 0
       protocol = "-1"
       cidr_blocks = ["0.0.0.0/0"]
-    }  
-  
+    }
+
   tags = var.elk_security_group_tags
 }
 
@@ -544,18 +544,18 @@ resource "aws_instance" "oc_elk" {
   subnet_id = aws_subnet.oc_public_2.id
   vpc_security_group_ids = [aws_security_group.oc_elk.id]
   iam_instance_profile = aws_iam_instance_profile.oc_ec2_route53.name
-  
+
   root_block_device {
     volume_size = var.elk["volume_size"]
     volume_type = var.elk["volume_type"]
     encrypted = var.elk["encrypted"]
     delete_on_termination = var.elk["delete_on_termination"]
   }
-  
+
   credit_specification {
     cpu_credits = var.elk["cpu_credits"]
   }
-  
+
   tags = var.elk_tags
   volume_tags = var.elk_tags
 }
@@ -568,20 +568,20 @@ resource "null_resource" "oc_ansible_setup" {
     cat > aws_inventory <<EOF
     [master]
     ${aws_instance.oc_k8s_master.private_ip} ansible_user=${var.k8s_instance_login_user}
-    
+
     [worker]
     ${aws_instance.oc_k8s_worker.private_ip} ansible_user=${var.k8s_instance_login_user}
-    
+
     [k8s:children]
     master
     worker
-    
+
     [bastion]
     ${data.aws_instance.oc_bastion.public_ip} ansible_user=${var.bastion_login_user}
-    
+
     [elk]
     ${aws_instance.oc_elk.public_ip} ansible_user=${var.elk_instance_login_user}
-    
+
     EOF
     EOT
   }
@@ -596,11 +596,12 @@ resource "null_resource" "oc_ansible_setup" {
     sed -i 's/^elasticsearch_host.*/elasticsearch_host: "${aws_instance.oc_elk.private_ip}:9200"/' all.yml && \
     sed -i 's/^k8s_master_private_ip.*/k8s_master_private_ip: "${aws_instance.oc_k8s_master.private_ip}"/' all.yml && \
     sed -i 's/^k8s_worker_private_ip.*/k8s_worker_private_ip: "${aws_instance.oc_k8s_worker.private_ip}"/' all.yml && \
-    sed -i 's/^kibana_domain.*/kibana_domain: "kibana.${var.domain_name}"/' all.yml && \
-    sed -i 's/^email_for_lets_encrypt.*/email_for_lets_encrypt: "${var.email_address}"/' all.yml
+    sed -i 's/^domain_name.*/domain_name: "${var.domain_name}"/' all.yml && \
+    sed -i 's/^email_for_lets_encrypt.*/email_for_lets_encrypt: "${var.email_address}"/' all.yml && \
+    sed -i 's/^aws_region_name.*/aws_region_name: "${var.aws_region}"/' all.yml
     EOT
-  }    
-  
+  }
+
   triggers = {
     k8s_master_private_ip = aws_instance.oc_k8s_master.private_ip
     k8s_worker_private_ip = aws_instance.oc_k8s_worker.private_ip
@@ -620,7 +621,7 @@ resource "null_resource" "oc_k8s_and_elk" {
     aws ec2 wait instance-status-ok --instance-ids ${aws_instance.oc_elk.id} ${data.aws_instance.oc_bastion.id} && \
     ansible-playbook --inventory aws_inventory --tags "elastic-stack-nginx,beats" --verbose site.yml
     EOT
-  } 
+  }
 
   triggers = {
     k8s_master_id = aws_instance.oc_k8s_master.id
@@ -628,7 +629,7 @@ resource "null_resource" "oc_k8s_and_elk" {
     elk_instance_id = aws_instance.oc_elk.id
     bastion_instance_id = data.aws_instance.oc_bastion.id
   }
-  
+
   depends_on = [null_resource.oc_ansible_setup, null_resource.oc_bastion]
 }
 
@@ -653,9 +654,9 @@ resource "null_resource" "oc_deploy_owncloud" {
   triggers = {
     k8s_and_elk_id = null_resource.oc_k8s_and_elk.id
     aws_efs_dns_name = aws_efs_file_system.oc.dns_name
-    db_instance_id = aws_db_instance.oc.id    
+    db_instance_id = aws_db_instance.oc.id
   }
-  
+
   depends_on = [null_resource.oc_k8s_and_elk, aws_efs_mount_target.oc_private]
 }
 
@@ -716,8 +717,8 @@ EOF
 resource "aws_iam_instance_profile" "oc_ec2_route53" {
   name = var.instance_profile_name
   role = aws_iam_role.oc_ec2_route53.name
-  
-  tags = var.instance_profile_tags  
+
+  tags = var.instance_profile_tags
 }
 
 resource "aws_route53_zone" "oc_public" {
@@ -725,15 +726,15 @@ resource "aws_route53_zone" "oc_public" {
   comment = var.public_hosted_zone_description
   delegation_set_id = var.delegation_set_id
   force_destroy = true
-  
-  tags = var.public_hosted_zone_tags  
+
+  tags = var.public_hosted_zone_tags
 }
 
 resource "aws_route53_record" "oc_app_1" {
   zone_id = aws_route53_zone.oc_public.zone_id
   name = ""
   type = "A"
-  
+
   alias {
     name = aws_lb.oc.dns_name
     zone_id = aws_lb.oc.zone_id
@@ -777,12 +778,12 @@ resource "aws_route53_zone" "oc_private" {
   name = var.domain_name
   comment = var.private_hosted_zone_description
   force_destroy = true
-  
+
   vpc {
     vpc_id = aws_vpc.oc.id
   }
-  
-  tags = var.private_hosted_zone_tags 
+
+  tags = var.private_hosted_zone_tags
 }
 
 resource "aws_route53_record" "oc_database" {
@@ -790,5 +791,5 @@ resource "aws_route53_record" "oc_database" {
   name = "database.${var.domain_name}"
   type = "CNAME"
   ttl = "10"
-  records = [aws_db_instance.oc.address]  
+  records = [aws_db_instance.oc.address]
 }

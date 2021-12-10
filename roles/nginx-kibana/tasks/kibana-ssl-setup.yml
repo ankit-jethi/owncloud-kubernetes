@@ -17,5 +17,5 @@
   
 - name: Run certbot to get the certificate
   ansible.builtin.command:
-    cmd: certbot run --dns-route53 --domain {{ kibana_domain }} --domain www.{{ kibana_domain }} --verbose --agree-tos --email {{ email_for_lets_encrypt }} --no-eff-email --installer nginx {% if test_certificate == true %} --test-cert {% endif %} {% if force_renewal == true %} --force-renewal {% endif %} --non-interactive
+    cmd: certbot run --dns-route53 --domain kibana.{{ domain_name }} --domain www.kibana.{{ domain_name }} --verbose --agree-tos --email {{ email_for_lets_encrypt }} --no-eff-email --installer nginx {% if kibana_test_certificate == true %} --test-cert {% endif %} {% if kibana_certificate_force_renewal == true %} --force-renewal {% endif %} --non-interactive
 

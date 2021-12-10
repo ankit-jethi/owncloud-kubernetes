@@ -25,7 +25,7 @@ es_config:
   #discovery.seed_hosts: "localhost" # For version: 7.x
   discovery.type: "single-node"
 
-#es_allow_downgrades: true
+#es_allow_downgrades: true # Optional: For rollback
 
 es_users:
   native:
@@ -55,14 +55,27 @@ elasticsearch_host: < managed_by_terraform >
 k8s_master_private_ip: < managed_by_terraform >
 k8s_worker_private_ip: < managed_by_terraform >
 
+# common variables - nginx, kibana_ssl_setup and owncloud_ssl_setup
+
+domain_name: < managed_by_terraform >
+email_for_lets_encrypt: < managed_by_terraform >
+
 # nginx
 
 nginx_package: "nginx=1.18.0-2~bionic"
-kibana_domain: < managed_by_terraform >
 
 # kibana ssl setup
 
 kibana_ssl_setup: true
-test_certificate: true
-force_renewal: false
-email_for_lets_encrypt: < managed_by_terraform >
+kibana_test_certificate: true
+kibana_certificate_force_renewal: false
+
+# owncloud ssl setup
+
+pip_package: "pip==21.3.1"
+certbot_and_boto3_packages: ["certbot==1.22.0", "certbot-dns-route53==1.22.0", "pyOpenSSL==21.0.0", "boto3==1.20.22"]
+owncloud_ssl_setup: true
+owncloud_test_certificate: true
+owncloud_certificate_force_renewal: false
+aws_region_name: < managed_by_terraform >
+

@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+# certbot_acm.py - Uses Certbot to get SSL/TLS certificates from Let’s Encrypt and import it to AWS Certificate Manager (ACM).
+
+from certbot.main import main as certbot_get_certificate
+from pathlib import Path
+import boto3
+
+
+# Certbot
+def create_certbot_dir(dir_name):
+    certbot_dir = Path(f"/home/{{ admin_user }}/certbot_acm_config/{dir_name}/")
+    certbot_dir.mkdir(parents=True, exist_ok=True)
+    return certbot_dir.as_posix()
+
+
+certbot_args = f"""certonly --dns-route53 --verbose --agree-tos --non-interactive
+                --domain {{ domain_name }} --domain www.{{ domain_name }}
+                --email {{ email_for_lets_encrypt }} --no-eff-email
+                {% if owncloud_test_certificate == true %} --test-cert {% endif %}
+                {% if owncloud_certificate_force_renewal == true %} --force-renewal {% endif %}
+                --config-dir {create_certbot_dir('config')}
+                --work-dir {create_certbot_dir('work')}
+                --logs-dir {create_certbot_dir('logs')}"""
+
+certbot_get_certificate(certbot_args.split())
+
+
+# AWS Certificate Manager
+acm = boto3.client("acm", region_name="{{ aws_region_name }}")
+
+certificate = Path("/home/{{ admin_user }}/certbot_acm_config/config/live/{{ domain_name }}/cert.pem").read_bytes()
+private_key = Path("/home/{{ admin_user }}/certbot_acm_config/config/live/{{ domain_name }}/privkey.pem").read_bytes()
+certificate_chain = Path("/home/{{ admin_user }}/certbot_acm_config/config/live/{{ domain_name }}/chain.pem").read_bytes()
+
+certificate_arn = Path("/home/{{ admin_user }}/certbot_acm_config/acm_certificate_arn.txt")
+
+if certificate_arn.exists():
+
+    response = acm.import_certificate(
+        CertificateArn=certificate_arn.read_text(),
+        Certificate=certificate,
+        PrivateKey=private_key,
+        CertificateChain=certificate_chain
+    )
+
+else:
+
+    response = acm.import_certificate(
+        Certificate=certificate,
+        PrivateKey=private_key,
+        CertificateChain=certificate_chain,
+        Tags=[ { 'Key': 'imported_from', 'Value': 'certbot_acm.py' } ]
+    )
+
+    certificate_arn.write_text(response.get("CertificateArn"))
+
