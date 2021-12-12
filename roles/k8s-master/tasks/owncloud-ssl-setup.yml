@@ -1,3 +1,5 @@
+# Tasks for getting SSL/TLS certificate for owncloud application.
+
 - name: install pip
   ansible.builtin.apt:
     update_cache: yes
@@ -34,6 +36,7 @@
     cmd: python3 certbot_acm.py
   when: python_script is changed
 
+# Renew certificate twice a month.
 - name: setup cron for cert renewal
   ansible.builtin.cron:
     backup: yes
