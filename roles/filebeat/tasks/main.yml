@@ -1,3 +1,5 @@
+# Tasks for installing and configuring filebeat.
+
 - name: Install filebeat dependencies
   ansible.builtin.apt:
     update_cache: yes
