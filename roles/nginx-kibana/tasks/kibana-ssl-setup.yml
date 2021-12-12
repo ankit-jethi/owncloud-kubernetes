@@ -1,3 +1,5 @@
+# Tasks for getting SSL/TLS certificate for kibana.
+
 - name: Install certbot
   community.general.snap:
     name: certbot
