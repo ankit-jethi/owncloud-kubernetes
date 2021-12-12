@@ -1,3 +1,5 @@
+# Tasks for initial configuration of system required for kubernetes.
+
 - name: Remove swap entry from /etc/fstab
   ansible.posix.mount:
     backup: yes
@@ -32,6 +34,7 @@
     - net.bridge.bridge-nf-call-ip6tables
     - net.bridge.bridge-nf-call-iptables
 
+# Required for persistent volume using AWS EFS.
 - name: Install nfs helper program
   ansible.builtin.apt:
     update_cache: yes
