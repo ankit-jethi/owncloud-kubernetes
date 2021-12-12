@@ -1,3 +1,5 @@
+# Tasks for installing and configuring metricbeat.
+
 - name: Install metricbeat dependencies
   ansible.builtin.apt:
     update_cache: yes
