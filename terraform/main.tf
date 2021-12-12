@@ -127,9 +127,15 @@ resource "aws_default_route_table" "oc_private" {
 }
 
 locals {
+  lb_security_group_ingress = [
+    { description = "HTTP - Internet", port = 80 },
+    { description = "HTTPS - Internet", port = 443 }
+  ]
+
   app_security_group_ingress = [
-    { description = "App access from the the internet.", protocol = "tcp", port = 30000, security_groups = [], cidr_blocks = ["0.0.0.0/0"], self = false },
-    { description = "SSH access from the Bastion.", protocol = "tcp", port = 22, security_groups = [aws_security_group.oc_bastion.id], cidr_blocks = [], self = false },
+    { description = "App - Load Balancer", protocol = "tcp", port = 30000, security_groups = [aws_security_group.oc_lb.id], cidr_blocks = [], self = false },
+    { description = "App - ELK - Heartbeat", protocol = "tcp", port = 30000, security_groups = [aws_security_group.oc_elk.id], cidr_blocks = [], self = false },
+    { description = "SSH - Bastion", protocol = "tcp", port = 22, security_groups = [aws_security_group.oc_bastion.id], cidr_blocks = [], self = false },
     { description = "Kubernetes API server", protocol = "tcp", port = 6443, security_groups = [], cidr_blocks = [], self = true },
     { description = "etcd server client API", protocol = "tcp", port = 2379, security_groups = [], cidr_blocks = [], self = true },
     { description = "etcd server client API", protocol = "tcp", port = 2380, security_groups = [], cidr_blocks = [], self = true },
@@ -139,13 +145,48 @@ locals {
     { description = "Flannel pod network", protocol = "udp", port = 8472, security_groups = [], cidr_blocks = [], self = true }    
   ]
 
-  elk_security_group_ingress = [
-    { description = "SSH access from your IP address(es).", port = 22, security_groups = [], cidr_blocks = var.allowed_cidr_blocks_ssh },
-    { description = "Elasticsearch - Beats", port = 9200, security_groups = [aws_security_group.oc_app.id, aws_security_group.oc_bastion.id], cidr_blocks = [] },
-    { description = "Kibana - Beats", port = 5601, security_groups = [aws_security_group.oc_app.id, aws_security_group.oc_bastion.id], cidr_blocks = [] },
-    { description = "Kibana - HTTP", port = 80, security_groups = [], cidr_blocks = var.allowed_cidr_blocks_ssh },
-    { description = "Kibana - HTTPS", port = 443, security_groups = [], cidr_blocks = var.allowed_cidr_blocks_ssh }
-  ]
+  elk_cidr_blocks_rules = {
+    1 = { type = "ingress", description = "SSH - Your IP address(es).", protocol = "tcp", port = 22, cidr_blocks = var.allowed_cidr_blocks },    
+    2 = { type = "ingress", description = "Kibana - HTTP - Your IP address(es)", protocol = "tcp", port = 80, cidr_blocks = var.allowed_cidr_blocks },
+    3 = { type = "ingress", description = "Kibana - HTTPS - Your IP address(es)", protocol = "tcp", port = 443, cidr_blocks = var.allowed_cidr_blocks },
+    4 = { type = "egress", description = "Allow all outbound traffic.", protocol = "-1", port = 0, cidr_blocks = ["0.0.0.0/0"] }    
+  }
+
+  elk_security_group_rules = {
+    1 = { description = "SSH - Bastion", port = 22, security_group = aws_security_group.oc_bastion.id },   
+    2 = { description = "Elasticsearch - App - Beats", port = 9200, security_group = aws_security_group.oc_app.id },
+    3 = { description = "Elasticsearch - Bastion - Beats", port = 9200, security_group = aws_security_group.oc_bastion.id },
+    4 = { description = "Kibana - App - Beats", port = 5601, security_group = aws_security_group.oc_app.id },
+    5 = { description = "Kibana - Bastion - Beats", port = 5601, security_group = aws_security_group.oc_bastion.id }
+  }
+}
+
+resource "aws_security_group" "oc_lb" {
+  name = var.lb_security_group_name
+  description = var.lb_security_group_description
+  vpc_id = aws_vpc.oc.id
+
+  dynamic "ingress" {
+    for_each = local.lb_security_group_ingress
+
+    content {
+      description = ingress.value.description
+      from_port = ingress.value.port
+      to_port = ingress.value.port
+      protocol = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]      
+    }
+  }
+
+  egress {
+      description = "Allow all outbound traffic."  
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+
+  tags = var.lb_security_group_tags
 }
 
 resource "aws_security_group" "oc_bastion" {
@@ -158,7 +199,7 @@ resource "aws_security_group" "oc_bastion" {
       from_port = 22
       to_port = 22
       protocol = "tcp"
-      cidr_blocks = var.allowed_cidr_blocks_ssh
+      cidr_blocks = var.allowed_cidr_blocks
   }
   
   egress {
@@ -247,28 +288,31 @@ resource "aws_security_group" "oc_elk" {
   description = var.elk_security_group_description
   vpc_id = aws_vpc.oc.id
 
-  dynamic "ingress" {
-    for_each = local.elk_security_group_ingress
-
-    content {
-      description = ingress.value.description
-      from_port = ingress.value.port
-      to_port = ingress.value.port
-      protocol = "tcp"
-      security_groups = ingress.value.security_groups
-      cidr_blocks = ingress.value.cidr_blocks
-    }
-  }
-
-  egress {
-      description = "Allow all outbound traffic."
-      from_port = 0
-      to_port = 0
-      protocol = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-
   tags = var.elk_security_group_tags
+}
+
+resource "aws_security_group_rule" "oc_elk_cidr_blocks" {
+  for_each = local.elk_cidr_blocks_rules
+
+  security_group_id = aws_security_group.oc_elk.id
+  protocol = each.value.protocol
+  type = each.value.type
+  from_port = each.value.port
+  to_port = each.value.port
+  description = each.value.description
+  cidr_blocks = each.value.cidr_blocks
+}
+
+resource "aws_security_group_rule" "oc_elk_security_group" {
+  for_each = local.elk_security_group_rules
+
+  security_group_id = aws_security_group.oc_elk.id
+  protocol = "tcp"
+  type = "ingress"
+  from_port = each.value.port
+  to_port = each.value.port
+  description = each.value.description
+  source_security_group_id = each.value.security_group
 }
 
 resource "aws_db_subnet_group" "oc" {
@@ -411,6 +455,7 @@ resource "aws_instance" "oc_k8s_master" {
   key_name = aws_key_pair.oc.id
   subnet_id = aws_subnet.oc_private_1.id
   vpc_security_group_ids = [aws_security_group.oc_app.id]
+  iam_instance_profile = aws_iam_instance_profile.oc_route53_acm.name
   
   root_block_device {
     volume_size = var.k8s_master["volume_size"]
@@ -451,23 +496,25 @@ resource "aws_instance" "oc_k8s_worker" {
 
 resource "aws_lb_target_group" "oc" {
   name = var.lb_target_group_name
-  protocol = "TCP"
+  protocol = "HTTP"
   port = 30000
-  preserve_client_ip = true
   target_type = "instance"
   vpc_id = aws_vpc.oc.id
 
   stickiness {
     enabled = true
-    type = "source_ip"
+    type = "lb_cookie"
   }
   
   health_check {
-    healthy_threshold = 2
-    unhealthy_threshold = 2
-    interval = 10
-    protocol = "TCP"
+    healthy_threshold = 3
+    unhealthy_threshold = 3
+    timeout = 10    
+    interval = 15
+    protocol = "HTTP"
     port = "traffic-port"
+    path = "/"
+    matcher = "200,302"
   }
   
   tags = var.lb_target_group_tags
@@ -486,7 +533,8 @@ resource "aws_lb_target_group_attachment" "oc" {
 resource "aws_lb" "oc" {
   name = var.lb_name
   internal = false
-  load_balancer_type = "network"
+  load_balancer_type = "application"
+  security_groups = [aws_security_group.oc_lb.id]
   subnets = [aws_subnet.oc_public_1.id, aws_subnet.oc_public_2.id]
   ip_address_type = "ipv4"
   
@@ -495,8 +543,34 @@ resource "aws_lb" "oc" {
 
 resource "aws_lb_listener" "oc_http" {
   load_balancer_arn = aws_lb.oc.arn
-  protocol = "TCP"
+  protocol = "HTTP"
   port = 80
+  
+  default_action {
+    type = "redirect"
+
+    redirect {
+      protocol = "HTTPS"
+      port = 443
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+data "aws_acm_certificate" "oc" {
+  domain = var.domain_name
+  types = ["IMPORTED"]
+  most_recent = true
+
+  depends_on = [null_resource.oc_k8s_and_elk]
+}
+
+resource "aws_lb_listener" "oc_https" {
+  load_balancer_arn = aws_lb.oc.arn
+  protocol = "HTTPS"
+  port = 443
+  ssl_policy = "ELBSecurityPolicy-2016-08"
+  certificate_arn = data.aws_acm_certificate.oc.arn
   
   default_action {
     type = "forward"
@@ -543,7 +617,7 @@ resource "aws_instance" "oc_elk" {
   key_name = aws_key_pair.oc.id
   subnet_id = aws_subnet.oc_public_2.id
   vpc_security_group_ids = [aws_security_group.oc_elk.id]
-  iam_instance_profile = aws_iam_instance_profile.oc_ec2_route53.name
+  iam_instance_profile = aws_iam_instance_profile.oc_route53.name
 
   root_block_device {
     volume_size = var.elk["volume_size"]
@@ -660,30 +734,21 @@ resource "null_resource" "oc_deploy_owncloud" {
   depends_on = [null_resource.oc_k8s_and_elk, aws_efs_mount_target.oc_private]
 }
 
+data "aws_iam_policy_document" "instance_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
 
-resource "aws_iam_role" "oc_ec2_route53" {
-  name = var.iam_role["name"]
-  description = var.iam_role["description"]
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "ec2.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
     }
-  ]
+  }
 }
-EOF
 
-  inline_policy {
-    name = var.iam_role["policy_name"]
-    policy = <<EOF
+resource "aws_iam_policy" "oc_route53" {
+  name = var.iam_policy_route53["name"]
+  description = var.iam_policy_route53["description"]
+  policy = <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -709,16 +774,64 @@ EOF
     ]
 }
 EOF
-  }
 
-  tags = var.iam_role_tags
+  tags = var.iam_policy_route53_tags
 }
 
-resource "aws_iam_instance_profile" "oc_ec2_route53" {
-  name = var.instance_profile_name
+resource "aws_iam_policy" "oc_acm" {
+  name = var.iam_policy_acm["name"]
+  description = var.iam_policy_acm["description"]
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "acm:AddTagsToCertificate",
+                "acm:ImportCertificate"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+
+  tags = var.iam_policy_acm_tags
+}
+
+resource "aws_iam_role" "oc_ec2_route53" {
+  name = var.iam_role_ec2_route53["name"]
+  description = var.iam_role_ec2_route53["description"]
+
+  assume_role_policy = data.aws_iam_policy_document.instance_assume_role_policy.json
+  managed_policy_arns = [aws_iam_policy.oc_route53.arn]
+
+  tags = var.iam_role_ec2_route53_tags
+}
+
+resource "aws_iam_role" "oc_ec2_route53_acm" {
+  name = var.iam_role_ec2_route53_acm["name"]
+  description = var.iam_role_ec2_route53_acm["description"]
+
+  assume_role_policy = data.aws_iam_policy_document.instance_assume_role_policy.json
+  managed_policy_arns = [aws_iam_policy.oc_route53.arn, aws_iam_policy.oc_acm.arn]
+
+  tags = var.iam_role_ec2_route53_acm_tags
+}
+
+resource "aws_iam_instance_profile" "oc_route53" {
+  name = var.instance_profile_route53_name
   role = aws_iam_role.oc_ec2_route53.name
 
-  tags = var.instance_profile_tags
+  tags = var.instance_profile_route53_tags
+}
+
+resource "aws_iam_instance_profile" "oc_route53_acm" {
+  name = var.instance_profile_route53_acm_name
+  role = aws_iam_role.oc_ec2_route53_acm.name
+
+  tags = var.instance_profile_route53_acm_tags
 }
 
 resource "aws_route53_zone" "oc_public" {

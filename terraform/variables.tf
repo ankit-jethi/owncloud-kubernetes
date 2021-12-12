@@ -64,6 +64,21 @@ variable "private_route_table_tags" {
   type = map(string)
 }
 
+variable "lb_security_group_name" {
+  description = "Name for the Load Balancer Security Group."
+  type = string
+}
+
+variable "lb_security_group_description" {
+  description = "Description for the Load Balancer Security Group."
+  type = string
+}
+
+variable "lb_security_group_tags" {
+  description = "Tags for the Load Balancer Security Group."
+  type = map(string)
+}
+
 variable "bastion_security_group_name" {
   description = "Name for the Bastion Security Group."
   type = string
@@ -79,8 +94,8 @@ variable "bastion_security_group_tags" {
   type = map(string)
 }
 
-variable "allowed_cidr_blocks_ssh" {
-  description = "A list of CIDR blocks to be allowed SSH access to the Bastion."
+variable "allowed_cidr_blocks" {
+  description = "A list of CIDR blocks to be allowed SSH access to the Bastion. Also, allowed SSH, HTTP and HTTPS access to Kibana. Eg. Your Public IP address."
   type = list(string)
 }
 
@@ -319,26 +334,6 @@ variable "delegation_set_id" {
   type = string
 }
 
-variable "iam_role" {
-  description = "A map of all the data required to setup the IAM role."
-  type = map(string)
-}
-
-variable "iam_role_tags" {
-  description = "Tags for the IAM role."
-  type = map(string)
-}
-
-variable "instance_profile_name" {
-  description = "Name of the instance profile."
-  type = string
-}
-
-variable "instance_profile_tags" {
-  description = "Tags for the instance profile."
-  type = map(string)
-}
-
 variable "public_hosted_zone_description" {
   description = "Description of the Public Hosted Zone."
   type = string
@@ -359,3 +354,62 @@ variable "private_hosted_zone_tags" {
   type = map(string)
 }
 
+variable "iam_policy_route53" {
+  description = "A map of all the data required to setup the IAM policy with Route 53 access."
+  type = map(string)
+}
+
+variable "iam_policy_route53_tags" {
+  description = "Tags for the IAM policy with Route 53 access."
+  type = map(string)
+}
+
+variable "iam_policy_acm" {
+  description = "A map of all the data required to setup the IAM policy with ACM access."
+  type = map(string)
+}
+
+variable "iam_policy_acm_tags" {
+  description = "Tags for the IAM policy with ACM access."
+  type = map(string)
+}
+
+variable "iam_role_ec2_route53" {
+  description = "A map of all the data required to setup the IAM role for EC2 to access Route 53."
+  type = map(string)
+}
+
+variable "iam_role_ec2_route53_tags" {
+  description = "Tags for the IAM role for EC2 to access Route 53."
+  type = map(string)
+}
+
+variable "iam_role_ec2_route53_acm" {
+  description = "A map of all the data required to setup the IAM role for EC2 to access Route 53 and ACM."
+  type = map(string)
+}
+
+variable "iam_role_ec2_route53_acm_tags" {
+  description = "Tags for the IAM role for EC2 to access Route 53 and ACM."
+  type = map(string)
+}
+
+variable "instance_profile_route53_name" {
+  description = "Name of the instance profile with Route 53 access."
+  type = string
+}
+
+variable "instance_profile_route53_tags" {
+  description = "Tags for the instance profile with Route 53 access."
+  type = map(string)
+}
+
+variable "instance_profile_route53_acm_name" {
+  description = "Name of the instance profile with Route 53 and ACM access."
+  type = string
+}
+
+variable "instance_profile_route53_acm_tags" {
+  description = "Tags for the instance profile with Route 53 and ACM access."
+  type = map(string)
+}
