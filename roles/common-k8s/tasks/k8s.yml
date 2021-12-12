@@ -1,3 +1,5 @@
+# Tasks for installing and configuring kubernetes.
+
 - name: Add Kubernetes's GPG key
   ansible.builtin.command:
     cmd: curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
