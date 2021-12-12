@@ -1,4 +1,4 @@
-# Setup ssh args for ansible to connect to the instances in the private subnet through bastion.
+# Setup ssh args so that ansible can connect to the k8s instances in the private subnet through bastion.
 # This file will be created from the terraform apply command.
 # It will look something like this.
 
