@@ -1,3 +1,5 @@
+# Tasks for deploying owncloud application onto kubernetes cluster.
+
 - name: Create directory for owncloud
   ansible.builtin.file:
     path: "/home/{{ admin_user }}/owncloud/"
