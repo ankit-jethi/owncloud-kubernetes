@@ -1,3 +1,5 @@
+# Tasks for creating a kubernetes cluster.
+
 - name: Create a cluster with kubeadm
   ansible.builtin.command:
     cmd: "kubeadm init --apiserver-advertise-address={{ apiserver_advertise_address }} --pod-network-cidr=10.244.0.0/16 --node-name master"
@@ -7,10 +9,7 @@
 
 - name: Create .kube directory
   ansible.builtin.file:
-    #group: "{{ admin_user }}"
-    #owner: "{{ admin_user }}"
     path: "/home/{{ admin_user }}/.kube"
-    #recurse: yes
     state: directory
 
 - name: Copy kubeconfig file
@@ -24,6 +23,7 @@
     backup: yes
   become: yes
 
+# Used for kube-state-metrics
 - name: Get the kubeconfig file locally
   ansible.builtin.fetch:
     src: "/home/{{ admin_user }}/.kube/config"
@@ -33,13 +33,11 @@
 - name: Deploy pod network
   ansible.builtin.command:
     cmd: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-  #become_user: "{{ admin_user }}"
   when: create_k8s_cluster is changed
 
 - name: Remove taint to schedule pods on master
   ansible.builtin.command:
     cmd: kubectl taint nodes --all node-role.kubernetes.io/master-
-  #become_user: "{{ admin_user }}"
   when: create_k8s_cluster is changed
 
 - name: Get the join command
