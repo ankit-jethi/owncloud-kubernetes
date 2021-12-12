@@ -1,18 +1,21 @@
 #!/usr/bin/python3
 # certbot_acm.py - Uses Certbot to get SSL/TLS certificates from Let’s Encrypt and import it to AWS Certificate Manager (ACM).
 
+# Import certbot and boto3(aws) modules
 from certbot.main import main as certbot_get_certificate
 from pathlib import Path
 import boto3
 
 
 # Certbot
+
+# Create certbot configuration directories
 def create_certbot_dir(dir_name):
     certbot_dir = Path(f"/home/{{ admin_user }}/certbot_acm_config/{dir_name}/")
     certbot_dir.mkdir(parents=True, exist_ok=True)
     return certbot_dir.as_posix()
 
-
+# All of the arguments passed to certbot for getting the certificate
 certbot_args = f"""certonly --dns-route53 --verbose --agree-tos --non-interactive
                 --domain {{ domain_name }} --domain www.{{ domain_name }}
                 --email {{ email_for_lets_encrypt }} --no-eff-email
@@ -22,18 +25,25 @@ certbot_args = f"""certonly --dns-route53 --verbose --agree-tos --non-interactiv
                 --work-dir {create_certbot_dir('work')}
                 --logs-dir {create_certbot_dir('logs')}"""
 
+# Get the certificate
 certbot_get_certificate(certbot_args.split())
 
 
-# AWS Certificate Manager
+# AWS Certificate Manager (ACM)
+
+# Create a client with the ACM service
 acm = boto3.client("acm", region_name="{{ aws_region_name }}")
 
+# Read the certificate, certificate chain and private key received from certbot
 certificate = Path("/home/{{ admin_user }}/certbot_acm_config/config/live/{{ domain_name }}/cert.pem").read_bytes()
 private_key = Path("/home/{{ admin_user }}/certbot_acm_config/config/live/{{ domain_name }}/privkey.pem").read_bytes()
 certificate_chain = Path("/home/{{ admin_user }}/certbot_acm_config/config/live/{{ domain_name }}/chain.pem").read_bytes()
 
+# Path to ACM certificate Amazon Resource Name (ARN)
 certificate_arn = Path("/home/{{ admin_user }}/certbot_acm_config/acm_certificate_arn.txt")
 
+# Check if ACM certificate ARN exists, if it does, then replace its certificate with a new one.
+# Otherwise, create a new ARN and upload the certificate.
 if certificate_arn.exists():
 
     response = acm.import_certificate(
@@ -52,5 +62,6 @@ else:
         Tags=[ { 'Key': 'imported_from', 'Value': 'certbot_acm.py' } ]
     )
 
+    # Write the ACM certificate ARN to a file for future uploads.
     certificate_arn.write_text(response.get("CertificateArn"))
 
