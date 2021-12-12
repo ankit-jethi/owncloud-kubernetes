@@ -1,3 +1,5 @@
+# Tasks for installing and configuring nginx.
+
 - name: Install nginx dependencies
   ansible.builtin.apt:
     update_cache: yes
