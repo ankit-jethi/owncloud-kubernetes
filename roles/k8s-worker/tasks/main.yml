@@ -1,3 +1,5 @@
+# Tasks for joining the kubernetes cluster as a worker node.
+
 - name: Join the k8s cluster
   ansible.builtin.script:
     cmd: ./k8s_join_script.sh
