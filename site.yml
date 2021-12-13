@@ -20,7 +20,7 @@
   tags:
     - setup-k8s
 
-- name: setup elasticsearch and kibana
+- name: setup elasticsearch, kibana and nginx
   hosts: elk
   become: yes
   roles:
