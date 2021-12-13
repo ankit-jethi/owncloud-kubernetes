@@ -713,7 +713,12 @@ resource "null_resource" "oc_deploy_owncloud" {
     working_dir = "../roles/owncloud/templates/"
     command = <<-EOT
     sed -i 's/owncloud-domain.*/owncloud-domain: "${var.domain_name}"/' 04-config-map.yml && \
-    sed -i 's/owncloud-db-host.*/owncloud-db-host: "${aws_route53_record.oc_database.fqdn}"/' 04-config-map.yml
+    sed -i 's/owncloud-db-host.*/owncloud-db-host: "${aws_route53_record.oc_database.fqdn}"/' 04-config-map.yml && \
+    sed -i "s/owncloud-db-name.*/owncloud-db-name: $(echo -n '${var.db_instance["db_name"]}' | base64)/" 05-secret.yml && \
+    sed -i "s/owncloud-db-username.*/owncloud-db-username: $(echo -n '${var.db_instance["username"]}' | base64)/" 05-secret.yml && \
+    sed -i "s/owncloud-db-password.*/owncloud-db-password: $(echo -n '${var.db_instance["password"]}' | base64)/" 05-secret.yml && \
+    sed -i "s/owncloud-admin-username.*/owncloud-admin-username: $(echo -n '${var.owncloud_admin_username}' | base64)/" 05-secret.yml && \
+    sed -i "s/owncloud-admin-password.*/owncloud-admin-password: $(echo -n '${var.owncloud_admin_password}' | base64)/" 05-secret.yml
     EOT
   }
 
