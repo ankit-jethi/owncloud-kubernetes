@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: owncloud-deployment
   labels:
-    app: owncloud
+    app.kubernetes.io/name: owncloud
   namespace: owncloud-namespace
 spec:
   replicas: 2
@@ -13,11 +13,11 @@ spec:
       maxSurge: 1
   selector:
     matchLabels:
-      app: owncloud
+      app.kubernetes.io/name: owncloud
   template:
     metadata:
       labels:
-        app: owncloud
+        app.kubernetes.io/name: owncloud
     spec:
       volumes:
         - name: owncloud-data
@@ -32,8 +32,6 @@ spec:
             - mountPath: "/mnt/data"
               name: owncloud-data
           env:
-            - name: TZ
-              value: Asia/Kolkata
             - name: OWNCLOUD_DOMAIN
               valueFrom:
                 configMapKeyRef:
@@ -79,4 +77,3 @@ spec:
             periodSeconds: 30
             failureThreshold: 5
       restartPolicy: Always
-
