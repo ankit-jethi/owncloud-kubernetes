@@ -360,3 +360,8 @@ instance_profile_route53_acm_name = "oc_route53_acm"
 instance_profile_route53_acm_tags = {
   Name = "oc_route53_acm"
 }
+
+# Change Owncloud admin details.
+# These will be used to login on the owncloud website.
+owncloud_admin_username = "enter-owncloud-admin-username"
+owncloud_admin_password = "enter-owncloud-admin-password"
