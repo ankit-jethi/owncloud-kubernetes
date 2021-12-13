@@ -5,10 +5,9 @@ metadata:
   namespace: owncloud-namespace
 spec:
   selector:
-    app: owncloud
+    app.kubernetes.io/name: owncloud
   type: NodePort
   ports:
   - port: 8080
     targetPort: 8080
     nodePort: 30000
-
