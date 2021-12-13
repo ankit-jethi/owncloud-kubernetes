@@ -15,6 +15,12 @@ k8s_dpkg_selections: "hold"
 
 apiserver_advertise_address: < managed_by_terraform >
 
+# common variables - elasticsearch, kibana and beats
+
+# Change elasticsearch and kibana password.
+elasticsearch_password: "enter-elasticsearch-password"
+kibana_password: "enter-kibana-password"
+
 # elasticsearch
 
 es_version: "6.8.19"
@@ -29,17 +35,17 @@ es_config:
 es_users:
   native:
     kibana:
-      password: < hidden >
+      password: "{{ kibana_password }}"
 
 es_api_basic_auth_username: "elastic"
-es_api_basic_auth_password: < hidden >
+es_api_basic_auth_password: "{{ elasticsearch_password }}"
 
 # kibana
 
 kibana_version: "6.x"
 kibana_package: "kibana=6.8.19"
 kibana_elasticsearch_username: "kibana"
-kibana_elasticsearch_password: < hidden >
+kibana_elasticsearch_password: "{{ kibana_password }}"
 
 # beats
 
