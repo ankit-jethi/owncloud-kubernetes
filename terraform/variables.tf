@@ -413,3 +413,13 @@ variable "instance_profile_route53_acm_tags" {
   description = "Tags for the instance profile with Route 53 and ACM access."
   type = map(string)
 }
+
+variable "owncloud_admin_username" {
+  description = "Username for the Owncloud admin."
+  type = string
+}
+
+variable "owncloud_admin_password" {
+  description = "Password for the Owncloud admin."
+  type = string
+}
