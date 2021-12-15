@@ -46,7 +46,6 @@
 
 - name: Import Kibana SSL setup tasks
   ansible.builtin.import_tasks: kibana-ssl-setup.yml
-  when: kibana_ssl_setup == true
   tags:
     - kibana-ssl-setup
 
