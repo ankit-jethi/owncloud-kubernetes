@@ -94,7 +94,7 @@ cd owncloud-kubernetes/
 - For terraform variables: Refer to [variables.tf](../master/terraform/variables.tf) and [example.tfvars](../master/terraform/example.tfvars) and create **terraform.tfvars** in the terraform directory.
 - Create an S3 bucket to store terraform state. Put the S3 bucket details in [backend.conf](../master/terraform/backend.conf).
 - For ansible variables: Edit [all.yml](../master/group_vars/all.yml) in group_vars directory (Some variables are managed by terraform).
->For SSL/TLS certificates, by default, staging environment will be selected for Let's Encrypt. This is recommended to avoid hitting rate limits. Once deployed and verified, you can switch to the production environment by following the steps mentioned in the [Switching to production environment of Let's Encrypt section](##switching-to-production-environment-of-lets-encrypt).
+>For SSL/TLS certificates, by default, staging environment will be selected for Let's Encrypt. This is recommended to avoid hitting rate limits. Once deployed and verified, you can switch to the production environment by following the steps mentioned in the [Switching to production environment of Let's Encrypt section](#switching-to-production-environment-of-lets-encrypt).
 
 Now run these commands:  
 - To install required ansible collections and roles.
