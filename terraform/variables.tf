@@ -204,11 +204,6 @@ variable "db_instance" {
   type = map(string)
 }
 
-variable "enabled_cloudwatch_logs_exports" {
-  description = "A list of all the log types that you want to export to Cloudwatch."
-  type = list(string)
-}
-
 variable "db_instance_tags" {
   description = "Tags for the Database instance."
   type = map(string)
