@@ -56,7 +56,6 @@
 
 - name: Import Owncloud SSL setup tasks
   ansible.builtin.import_tasks: owncloud-ssl-setup.yml
-  when: owncloud_ssl_setup == true
   tags:
     - owncloud-ssl-setup
 
