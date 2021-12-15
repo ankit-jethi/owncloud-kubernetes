@@ -71,7 +71,6 @@ nginx_package: "nginx=1.18.0-2~bionic"
 
 # kibana ssl setup
 
-kibana_ssl_setup: true
 kibana_test_certificate: true
 kibana_certificate_force_renewal: false
 
@@ -79,7 +78,6 @@ kibana_certificate_force_renewal: false
 
 pip_package: "pip==21.3.1"
 certbot_and_boto3_packages: ["certbot==1.22.0", "certbot-dns-route53==1.22.0", "pyOpenSSL==21.0.0", "boto3==1.20.22", "botocore==1.23.22"]
-owncloud_ssl_setup: true
 owncloud_test_certificate: true
 owncloud_certificate_force_renewal: false
 aws_region_name: < managed_by_terraform >
