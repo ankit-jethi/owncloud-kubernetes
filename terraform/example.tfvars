@@ -173,8 +173,6 @@ db_instance = {
   deletion_protection = false
 }
 
-enabled_cloudwatch_logs_exports = ["error", "slowquery"]
-
 db_instance_tags = {
   Name = "oc"
 }
