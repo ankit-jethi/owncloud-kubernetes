@@ -365,7 +365,6 @@ resource "aws_db_instance" "oc" {
   copy_tags_to_snapshot = var.db_instance["copy_tags_to_snapshot"]  
   maintenance_window = var.db_instance["maintenance_window"]
   auto_minor_version_upgrade = var.db_instance["auto_minor_version_upgrade"]
-  enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
   
   delete_automated_backups = var.db_instance["delete_automated_backups"]
   skip_final_snapshot = var.db_instance["skip_final_snapshot"]
