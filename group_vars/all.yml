@@ -69,6 +69,11 @@ email_for_lets_encrypt: < managed_by_terraform >
 
 nginx_package: "nginx=1.18.0-2~bionic"
 
+
+# For SSL/TLS certificates, by default, staging environment (test certificate) is selected for Let's Encrypt. 
+# This is recommended to avoid hitting rate limits. 
+# Once deployed and verified, you can switch to the production environment by following the steps mentioned in the Switching to production environment of Let's Encrypt section of the Readme.
+
 # kibana ssl setup
 
 kibana_test_certificate: true
