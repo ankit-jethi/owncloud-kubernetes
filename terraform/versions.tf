@@ -7,5 +7,5 @@ terraform {
       version = "3.61.0"
     }
   }
-} 
+}
 
