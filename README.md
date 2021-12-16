@@ -22,7 +22,7 @@ unzip terraform_1.0.7_linux_amd64.zip
 sudo mv terraform /usr/local/bin/
 ```
 
-- Create an IAM user with AdministratorAccess.
+- Create an IAM user with programmatic access and attach the AdministratorAccess policy. (Note down the Access key ID & Secret access key)
 - Install AWS CLI.
 
 ```
@@ -32,6 +32,7 @@ unzip awscliv2.zip
 
 sudo ./aws/install
 
+# The following command will ask you for your Access key ID & Secret access key:
 aws configure
 ```
 
@@ -73,7 +74,7 @@ aws route53 create-reusable-delegation-set --caller-reference <enter-unique-stri
     "Location": "https://route53.amazonaws.com/2013-04-01/delegationset/ABCD1234EFGH5678",
     "DelegationSet": {
         "Id": "/delegationset/ABCD1234EFGH5678",
-        "CallerReference": "1234",
+        "CallerReference": "<unique-string>",
         "NameServers": [
             "ns-123.awsdns-45.com",
             "ns-678.awsdns-90.net",
@@ -92,9 +93,9 @@ git clone https://github.com/ankit-jethi/owncloud-kubernetes.git
 cd owncloud-kubernetes/
 ```
 - For terraform variables: Refer to [variables.tf](../master/terraform/variables.tf) and [example.tfvars](../master/terraform/example.tfvars) and create **terraform.tfvars** in the terraform directory.
-- Create an S3 bucket to store terraform state. Put the S3 bucket details in [backend.conf](../master/terraform/backend.conf).
+- Create an S3 bucket to store terraform state. And put the S3 bucket details in [backend.conf](../master/terraform/backend.conf).
 - For ansible variables: Edit [all.yml](../master/group_vars/all.yml) in group_vars directory (Some variables are managed by terraform).
->For SSL/TLS certificates, by default, staging environment will be selected for Let's Encrypt. This is recommended to avoid hitting rate limits. Once deployed and verified, you can switch to the production environment by following the steps mentioned in the [Switching to production environment of Let's Encrypt section](#switching-to-production-environment-of-lets-encrypt).
+>For SSL/TLS certificates, by default, staging environment (test certificate) is selected for Let's Encrypt. This is recommended to avoid hitting rate limits. Once deployed and verified, you can switch to the production environment by following the steps mentioned in the [Switching to production environment of Let's Encrypt section](#switching-to-production-environment-of-lets-encrypt).
 
 Now run these commands:  
 - To install required ansible collections and roles.
@@ -109,11 +110,11 @@ terraform init -backend-config=backend.conf
 ```  
 - To create an execution plan.
 ```
-terraform plan
+terraform plan -out=plan.out
 ```  
 - To execute the plan and create the infrastructure.
 ```
-terraform apply
+terraform apply plan.out
 ```
 
 Now, wait for 20-30 minutes for the whole infrastructure to be set up.
@@ -141,8 +142,10 @@ ansible-playbook --inventory aws_inventory --skip-tags "always" --tags "kibana-s
 
 ## Cleaning up:
 
-- Delete the infrastructure
+- To delete the infrastructure:
 ```
+cd terraform/
+
 terraform destroy
 ```
 - Delete the S3 bucket containing the terraform state.
