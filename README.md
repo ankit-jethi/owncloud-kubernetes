@@ -193,3 +193,53 @@ b. [Metricbeat](../master/roles/metricbeat/templates/metricbeat.yml.j2) - To get
 c. [Heartbeat](../master/roles/heartbeat/templates/heartbeat.yml.j2) - It is used for uptime monitoring of owncloud application.  
 d. Nginx - It is used as reverse proxy, caching server and for SSL termination.
 
+## References:
+1. Owncloud:  
+a. [Documentation](https://doc.owncloud.com/server/10.8/)  
+b. [Owncloud docker - GitHub](https://github.com/owncloud-docker/base)
+
+2. Kubernetes:  
+a. [Course](https://www.youtube.com/watch?v=X48VuDVv0do)  
+b. [Documentation](https://kubernetes.io/docs/home/)  
+c. [Flannel pod network](https://github.com/flannel-io/flannel)  
+d. [Kubernetes example - NFS volume](https://github.com/kubernetes/examples/tree/master/staging/volumes/nfs)
+
+3. AWS:  
+a. [Documentation](https://docs.aws.amazon.com/index.html)  
+b. [Boto3 documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)  
+c. [Architecture diagram - Tool](https://online.visual-paradigm.com/)
+
+4. Terraform:  
+a. [Course](https://www.youtube.com/playlist?list=PL8HowI-L-3_9bkocmR3JahQ4Y-Pbqs2Nt)  
+b. [Documentation](https://www.terraform.io/docs)  
+c. [AWS provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+
+5. Ansible:  
+a. [Course](https://www.youtube.com/playlist?list=PL0yQYCnvTmOv7ctKBb66YQx11NrQPWSrx)  
+b. [Documentation](https://docs.ansible.com/ansible/latest/index.html)  
+c. [Ansible Galaxy](https://galaxy.ansible.com/)
+
+6. Linux:  
+a. [How Linux Works by Brian Ward](https://nostarch.com/howlinuxworks3)
+
+7. Elastic Stack:  
+a. [Documentation](https://www.elastic.co/guide/index.html)  
+b. [Security](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/secure-cluster.html)  
+
+8. Nginx:  
+a. [Course](https://acloudguru.com/course/nginx-web-server-deep-dive)  
+b. [Documentation](https://nginx.org/en/docs/)  
+
+9. Python:  
+a. [Learn Python 3 the Hard Way by Zed Shaw](https://learncodethehardway.org/python/)  
+b. [Automate the Boring Stuff with Python by Al Sweigart](https://automatetheboringstuff.com/)  
+
+10. Certbot:  
+a. [Instructions](https://certbot.eff.org/instructions?ws=nginx&os=ubuntubionic)  
+b. [Documentation](https://eff-certbot.readthedocs.io/en/stable/)  
+c. [certbot-dns-route53 - GitHub](https://github.com/certbot/certbot/blob/master/certbot-dns-route53/certbot_dns_route53/_internal/dns_route53.py)  
+d. [Let's Encrypt documentation](https://letsencrypt.org/docs/)
+
+11. DevOps Roadmap:  
+a. [Website](https://roadmap.sh/devops)  
+b. [YouTube](https://www.youtube.com/c/theroadmap/videos) 
