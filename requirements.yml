@@ -7,5 +7,6 @@ collections:
 
 roles:
   - name: elastic.elasticsearch
+    version: v7.15.1
   - name: geerlingguy.kibana
-
+    version: 4.0.1
